@@ -262,11 +262,11 @@ window.MorphGame = (() => {
     const guard = map[4] || 0;
     const spirit = map[5] || 0;
     return {
-      hp: 40 + vital * 4 + guard * 2,
-      atk: 6 + might * 2 + Math.floor(spirit * 0.5),
+      hp: 48 + vital * 5 + guard * 2,
+      atk: 8 + might * 2 + Math.floor(spirit * 0.6),
       spd: 5 + swift,
-      def: 2 + Math.floor(guard * 1.2),
-      crit: Math.min(35, 5 + Math.floor(swift * 0.8) + Math.floor(spirit * 0.4)),
+      def: 3 + Math.floor(guard * 1.3),
+      crit: Math.min(38, 6 + Math.floor(swift * 0.8) + Math.floor(spirit * 0.4)),
       map,
     };
   }
@@ -277,7 +277,7 @@ window.MorphGame = (() => {
       (p) => zone.elements.includes(p.element) && p.stage <= 2
     );
     const pick = candidates[Math.floor(Math.random() * candidates.length)] || petById(1);
-    const variance = 0.85 + Math.random() * 0.35;
+    const variance = 0.72 + Math.random() * 0.28;
     const stats = baseStatsForPet(pick.id).map((ps) => ({
       stat_id: ps.stat_id,
       value: Math.max(1, Math.round(ps.value * variance)),
