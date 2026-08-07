@@ -110,7 +110,8 @@ spend energy_cost; gain base_gain (+ critical_bonus on roll)
 
 ## Files
 
-- `schema.sql` — DDL
-- `seed.sql` — starter catalog matching the Morph content pack
-- `js/data.js` — in-browser catalog mirror of seed
-- `js/game.js` — player/combat write model + localStorage persistence
+- `schema.sql` / `seed.sql` — DDL + content pack
+- `DOMAIN.md` — bounded contexts & ubiquitous language
+- `ARCHITECTURE.md` — SOLID module layout
+- `js/main.js` — composition root (ES modules)
+- `js/catalog/` · `js/domain/` · `js/persistence/` · `js/app/` · `js/ui/`

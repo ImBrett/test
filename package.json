@@ -2,6 +2,7 @@
   "name": "morph-rpg",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Morph — a pocket pet RPG. Train stats. Evolve beasts. Play anywhere.",
   "scripts": {
     "dev": "npx serve . -l 3000",

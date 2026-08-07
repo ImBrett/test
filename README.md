@@ -2,19 +2,13 @@
 
 A pocket pet RPG for your phone. Train stats, battle the wilds, evolve when thresholds wake.
 
-Built as a **data-driven DDD** game: catalog tables own behavior; the client interprets rows.
+**Data-driven DDD** + **SOLID ES modules** — catalog tables own behavior; domain services interpret rows.
 
-## Domain
+## Docs
 
-See [`DOMAIN.md`](./DOMAIN.md) for bounded contexts, aggregates, and rule interpreters.
-
-| File | Role |
-|---|---|
-| `schema.sql` | DDL — Catalog / Player / Combat / Ledger |
-| `seed.sql` | Content pack (species, moves, zones, evolutions…) |
-| `js/data.js` | In-browser catalog mirror |
-| `js/game.js` | Player + combat write model + `localStorage` |
-| `js/ui.js` | Mobile UI |
+- [`DOMAIN.md`](./DOMAIN.md) — bounded contexts & ubiquitous language
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — SOLID module map
+- `schema.sql` / `seed.sql` — DDL + content pack
 
 ## Play
 
@@ -24,16 +18,15 @@ npx serve . -l 3000
 
 ## Deploy to Vercel
 
-Import the GitHub repo → Framework **Other** → no build command → Deploy.
+Import the repo → Framework **Other** → no build → Deploy.
 
-Or: `npx vercel --yes`
+## Module map
 
-## How to play
-
-1. **New Journey** — name yourself, pick a starter lineage
-2. **Train** — drills from `training_drills` spend energy to raise stats
-3. **Explore** — weighted `zone_encounters` spawn wild beasts
-4. **Catch** — spend Morph Orbs (inventory) after a win
-5. **Evolve** — when all `evolution_requirements` are met (stats, items, …)
-
-Energy regenerates from `player_resources.energy_regen_seconds`. Rest costs 15 coins.
+```
+js/main.js          composition root
+js/catalog/         content + queries
+js/domain/          energy, inventory, training, evolution, combat
+js/persistence/     localStorage adapter
+js/app/MorphGame.js application facade (UI port)
+js/ui/              screens + navigation
+```
