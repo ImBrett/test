@@ -1,165 +1,316 @@
-/* Morph — catalog data mirroring the SQL schema */
+/* Morph — catalog mirror of schema.sql + seed.sql (Catalog BC) */
 
 window.MORPH_DATA = (() => {
   const now = () => new Date().toISOString();
 
+  const rarities = [
+    { id: 1, code: "common", display_name: "Common", sort_order: 1 },
+    { id: 2, code: "uncommon", display_name: "Uncommon", sort_order: 2 },
+    { id: 3, code: "rare", display_name: "Rare", sort_order: 3 },
+    { id: 4, code: "mythic", display_name: "Mythic", sort_order: 4 },
+  ];
+
+  const elements = [
+    { id: 1, code: "ember", display_name: "Ember", hue: 18 },
+    { id: 2, code: "tide", display_name: "Tide", hue: 198 },
+    { id: 3, code: "gale", display_name: "Gale", hue: 160 },
+    { id: 4, code: "stone", display_name: "Stone", hue: 35 },
+    { id: 5, code: "shade", display_name: "Shade", hue: 265 },
+    { id: 6, code: "bloom", display_name: "Bloom", hue: 130 },
+  ];
+
+  const element_matchups = [
+    { attacker_element_id: 1, defender_element_id: 4, multiplier: 1.5 },
+    { attacker_element_id: 1, defender_element_id: 6, multiplier: 1.5 },
+    { attacker_element_id: 1, defender_element_id: 2, multiplier: 0.5 },
+    { attacker_element_id: 2, defender_element_id: 1, multiplier: 1.5 },
+    { attacker_element_id: 2, defender_element_id: 4, multiplier: 1.5 },
+    { attacker_element_id: 2, defender_element_id: 6, multiplier: 0.5 },
+    { attacker_element_id: 3, defender_element_id: 6, multiplier: 1.5 },
+    { attacker_element_id: 3, defender_element_id: 5, multiplier: 1.5 },
+    { attacker_element_id: 3, defender_element_id: 4, multiplier: 0.5 },
+    { attacker_element_id: 4, defender_element_id: 3, multiplier: 1.5 },
+    { attacker_element_id: 4, defender_element_id: 1, multiplier: 0.5 },
+    { attacker_element_id: 4, defender_element_id: 5, multiplier: 1.5 },
+    { attacker_element_id: 5, defender_element_id: 3, multiplier: 0.5 },
+    { attacker_element_id: 5, defender_element_id: 6, multiplier: 1.5 },
+    { attacker_element_id: 5, defender_element_id: 5, multiplier: 0.5 },
+    { attacker_element_id: 6, defender_element_id: 2, multiplier: 1.5 },
+    { attacker_element_id: 6, defender_element_id: 4, multiplier: 0.5 },
+    { attacker_element_id: 6, defender_element_id: 1, multiplier: 0.5 },
+  ];
+
   const stats = [
-    { id: 1, name: "Might", key: "might", color: "#E85D4C", desc: "Raw strike power" },
-    { id: 2, name: "Vital", key: "vital", color: "#3DBE8B", desc: "Health & recovery" },
-    { id: 3, name: "Swift", key: "swift", color: "#4DB8E8", desc: "Speed & crit chance" },
-    { id: 4, name: "Guard", key: "guard", color: "#C4A35A", desc: "Damage reduction" },
-    { id: 5, name: "Spirit", key: "spirit", color: "#5EC8C0", desc: "Special force" },
+    { id: 1, code: "might", display_name: "Might", description: "Raw strike power", color: "#E85D4C", combat_role: "offense" },
+    { id: 2, code: "vital", display_name: "Vital", description: "Health & recovery", color: "#3DBE8B", combat_role: "sustain" },
+    { id: 3, code: "swift", display_name: "Swift", description: "Speed & crit chance", color: "#4DB8E8", combat_role: "speed" },
+    { id: 4, code: "guard", display_name: "Guard", description: "Damage reduction", color: "#C4A35A", combat_role: "defense" },
+    { id: 5, code: "spirit", display_name: "Spirit", description: "Special force", color: "#5EC8C0", combat_role: "special" },
+  ].map((s) => ({ ...s, name: s.display_name, desc: s.description }));
+
+  const items = [
+    { id: 1, code: "morph_orb", display_name: "Morph Orb", description: "Used to catch wild beasts.", item_kind: "catch", effect_payload: { catch_bonus: 0.15 }, rarity_id: 1, stackable: 1 },
+    { id: 2, code: "greater_orb", display_name: "Greater Orb", description: "Higher chance to secure a catch.", item_kind: "catch", effect_payload: { catch_bonus: 0.35 }, rarity_id: 2, stackable: 1 },
+    { id: 3, code: "ember_stone", display_name: "Ember Stone", description: "Catalyzes ember-line evolutions.", item_kind: "evolution", effect_payload: { elements: ["ember"] }, rarity_id: 3, stackable: 1 },
+    { id: 4, code: "ration", display_name: "Ration", description: "Restores 10 energy.", item_kind: "consumable", effect_payload: { energy: 10 }, rarity_id: 1, stackable: 1 },
+    { id: 5, code: "coin_pouch", display_name: "Coin Pouch", description: "Grants 50 coins when opened.", item_kind: "currency_pack", effect_payload: { coins: 50 }, rarity_id: 1, stackable: 1 },
   ];
 
-  // Pet species — SVG glyph + palette + base vibes
-  const pets = [
-    { id: 1, name: "Emberkit", stage: 1, element: "ember", glyph: "🔥", hue: 18, blurb: "A spark-bound cub that sneezes cinders." },
-    { id: 2, name: "Pyreling", stage: 2, element: "ember", glyph: "🌋", hue: 12, blurb: "Flames cling to its mane like living armor." },
-    { id: 3, name: "Infernox", stage: 3, element: "ember", glyph: "☄️", hue: 8, blurb: "A walking furnace that answers only to strength." },
-
-    { id: 4, name: "Dewlet", stage: 1, element: "tide", glyph: "💧", hue: 198, blurb: "A droplet pup that sings in puddles." },
-    { id: 5, name: "Cascara", stage: 2, element: "tide", glyph: "🌊", hue: 205, blurb: "Currents coil around its fins mid-battle." },
-    { id: 6, name: "Tidalking", stage: 3, element: "tide", glyph: "🐋", hue: 210, blurb: "Commands the swell with a single roar." },
-
-    { id: 7, name: "Gustling", stage: 1, element: "gale", glyph: "🍃", hue: 160, blurb: "A breezy fluff that never quite lands." },
-    { id: 8, name: "Zephyrix", stage: 2, element: "gale", glyph: "🌪️", hue: 170, blurb: "Cuts the air into ribbons of speed." },
-    { id: 9, name: "Stormara", stage: 3, element: "gale", glyph: "⚡", hue: 185, blurb: "A thunder-winged apex of the skies." },
-
-    { id: 10, name: "Pebblet", stage: 1, element: "stone", glyph: "🪨", hue: 35, blurb: "A rolling pebble with stubborn eyes." },
-    { id: 11, name: "Boulderkin", stage: 2, element: "stone", glyph: "🗿", hue: 28, blurb: "Its shell shrugs off all but the fiercest blows." },
-    { id: 12, name: "Titanox", stage: 3, element: "stone", glyph: "🦏", hue: 22, blurb: "A living mountain that refuses to fall." },
-
-    { id: 13, name: "Shadegrub", stage: 1, element: "shade", glyph: "🌑", hue: 265, blurb: "A shy shadow that feeds on quiet." },
-    { id: 14, name: "Umbrawisp", stage: 2, element: "shade", glyph: "👻", hue: 270, blurb: "Slips between moments to strike." },
-    { id: 15, name: "Voidrex", stage: 3, element: "shade", glyph: "👁️", hue: 280, blurb: "An abyss given teeth and will." },
-
-    { id: 16, name: "Sproutling", stage: 1, element: "bloom", glyph: "🌱", hue: 130, blurb: "A seed-beast that sprouts after every nap." },
-    { id: 17, name: "Bloomara", stage: 2, element: "bloom", glyph: "🌸", hue: 140, blurb: "Petals shield allies and poison foes." },
-    { id: 18, name: "Verdantis", stage: 3, element: "bloom", glyph: "🌳", hue: 125, blurb: "The grove itself, walking." },
-  ];
-
-  // Base pet_stats: [pet_id] -> { stat_id: value }
-  const baseByPet = {
-    1:  { 1: 8, 2: 6, 3: 5, 4: 4, 5: 3 },
-    2:  { 1: 14, 2: 10, 3: 8, 4: 7, 5: 5 },
-    3:  { 1: 22, 2: 15, 3: 12, 4: 11, 5: 8 },
-    4:  { 1: 4, 2: 9, 3: 5, 4: 6, 5: 4 },
-    5:  { 1: 7, 2: 15, 3: 9, 4: 10, 5: 7 },
-    6:  { 1: 11, 2: 23, 3: 13, 4: 15, 5: 10 },
-    7:  { 1: 5, 2: 5, 3: 9, 4: 3, 5: 4 },
-    8:  { 1: 9, 2: 8, 3: 16, 4: 6, 5: 7 },
-    9:  { 1: 13, 2: 12, 3: 24, 4: 9, 5: 12 },
-    10: { 1: 5, 2: 7, 3: 3, 4: 9, 5: 2 },
-    11: { 1: 8, 2: 12, 3: 5, 4: 16, 5: 4 },
-    12: { 1: 13, 2: 18, 3: 7, 4: 24, 5: 6 },
-    13: { 1: 4, 2: 5, 3: 6, 4: 3, 5: 9 },
-    14: { 1: 7, 2: 8, 3: 10, 4: 6, 5: 15 },
-    15: { 1: 11, 2: 12, 3: 14, 4: 9, 5: 23 },
-    16: { 1: 5, 2: 7, 3: 5, 4: 5, 5: 6 },
-    17: { 1: 8, 2: 12, 3: 9, 4: 9, 5: 10 },
-    18: { 1: 12, 2: 18, 3: 13, 4: 14, 5: 16 },
-  };
-
-  let petStatId = 1;
-  const pet_stats = [];
-  for (const pet of pets) {
-    const bases = baseByPet[pet.id];
-    for (const [statId, value] of Object.entries(bases)) {
-      pet_stats.push({
-        id: petStatId++,
-        pet_id: pet.id,
-        stat_id: Number(statId),
-        value,
-      });
-    }
-  }
-
-  // Evolutions: ancestor -> descendant
-  const evolutions = [
-    { id: 1, ancestor_id: 1, descendant_id: 2 },
-    { id: 2, ancestor_id: 2, descendant_id: 3 },
-    { id: 3, ancestor_id: 4, descendant_id: 5 },
-    { id: 4, ancestor_id: 5, descendant_id: 6 },
-    { id: 5, ancestor_id: 7, descendant_id: 8 },
-    { id: 6, ancestor_id: 8, descendant_id: 9 },
-    { id: 7, ancestor_id: 10, descendant_id: 11 },
-    { id: 8, ancestor_id: 11, descendant_id: 12 },
-    { id: 9, ancestor_id: 13, descendant_id: 14 },
-    { id: 10, ancestor_id: 14, descendant_id: 15 },
-    { id: 11, ancestor_id: 16, descendant_id: 17 },
-    { id: 12, ancestor_id: 17, descendant_id: 18 },
-  ];
-
-  // Requirements keyed by evolution id: { pet_stat_id matching ancestor, required value }
-  // We require raising the player's instance stats past thresholds.
-  const reqDefs = [
-    // Emberkit -> Pyreling: Might 14
-    { evo: 1, petId: 1, statId: 1, value: 14 },
-    // Pyreling -> Infernox: Might 24, Vital 16
-    { evo: 2, petId: 2, statId: 1, value: 24 },
-    { evo: 2, petId: 2, statId: 2, value: 16 },
-    // Dewlet -> Cascara: Vital 14
-    { evo: 3, petId: 4, statId: 2, value: 14 },
-    // Cascara -> Tidalking: Vital 24, Guard 14
-    { evo: 4, petId: 5, statId: 2, value: 24 },
-    { evo: 4, petId: 5, statId: 4, value: 14 },
-    // Gustling -> Zephyrix: Swift 14
-    { evo: 5, petId: 7, statId: 3, value: 14 },
-    // Zephyrix -> Stormara: Swift 24, Spirit 12
-    { evo: 6, petId: 8, statId: 3, value: 24 },
-    { evo: 6, petId: 8, statId: 5, value: 12 },
-    // Pebblet -> Boulderkin: Guard 14
-    { evo: 7, petId: 10, statId: 4, value: 14 },
-    // Boulderkin -> Titanox: Guard 24, Vital 16
-    { evo: 8, petId: 11, statId: 4, value: 24 },
-    { evo: 8, petId: 11, statId: 2, value: 16 },
-    // Shadegrub -> Umbrawisp: Spirit 14
-    { evo: 9, petId: 13, statId: 5, value: 14 },
-    // Umbrawisp -> Voidrex: Spirit 24, Swift 14
-    { evo: 10, petId: 14, statId: 5, value: 24 },
-    { evo: 10, petId: 14, statId: 3, value: 14 },
-    // Sproutling -> Bloomara: Vital 12, Spirit 10
-    { evo: 11, petId: 16, statId: 2, value: 12 },
-    { evo: 11, petId: 16, statId: 5, value: 10 },
-    // Bloomara -> Verdantis: Vital 20, Guard 14, Spirit 16
-    { evo: 12, petId: 17, statId: 2, value: 20 },
-    { evo: 12, petId: 17, statId: 4, value: 14 },
-    { evo: 12, petId: 17, statId: 5, value: 16 },
-  ];
-
-  let reqId = 1;
-  const pet_evolution_stat_requirements = reqDefs.map((r) => {
-    const petStat = pet_stats.find((ps) => ps.pet_id === r.petId && ps.stat_id === r.statId);
-    return {
-      id: reqId++,
-      pet_evolution_id: r.evo,
-      pet_stat_id: petStat.id,
-      value: r.value,
-      // denormalized helpers for UI
-      _stat_id: r.statId,
-      _pet_id: r.petId,
-    };
+  const species = [
+    { id: 1, code: "emberkit", display_name: "Emberkit", blurb: "A spark-bound cub that sneezes cinders.", glyph: "🔥", element_id: 1, stage: 1, rarity_id: 1, is_starter: 1, base_catch_rate: 0.45 },
+    { id: 2, code: "pyreling", display_name: "Pyreling", blurb: "Flames cling to its mane like living armor.", glyph: "🌋", element_id: 1, stage: 2, rarity_id: 2, is_starter: 0, base_catch_rate: 0.28 },
+    { id: 3, code: "infernox", display_name: "Infernox", blurb: "A walking furnace that answers only to strength.", glyph: "☄️", element_id: 1, stage: 3, rarity_id: 3, is_starter: 0, base_catch_rate: 0.12 },
+    { id: 4, code: "dewlet", display_name: "Dewlet", blurb: "A droplet pup that sings in puddles.", glyph: "💧", element_id: 2, stage: 1, rarity_id: 1, is_starter: 1, base_catch_rate: 0.45 },
+    { id: 5, code: "cascara", display_name: "Cascara", blurb: "Currents coil around its fins mid-battle.", glyph: "🌊", element_id: 2, stage: 2, rarity_id: 2, is_starter: 0, base_catch_rate: 0.28 },
+    { id: 6, code: "tidalking", display_name: "Tidalking", blurb: "Commands the swell with a single roar.", glyph: "🐋", element_id: 2, stage: 3, rarity_id: 3, is_starter: 0, base_catch_rate: 0.12 },
+    { id: 7, code: "gustling", display_name: "Gustling", blurb: "A breezy fluff that never quite lands.", glyph: "🍃", element_id: 3, stage: 1, rarity_id: 1, is_starter: 1, base_catch_rate: 0.45 },
+    { id: 8, code: "zephyrix", display_name: "Zephyrix", blurb: "Cuts the air into ribbons of speed.", glyph: "🌪️", element_id: 3, stage: 2, rarity_id: 2, is_starter: 0, base_catch_rate: 0.28 },
+    { id: 9, code: "stormara", display_name: "Stormara", blurb: "A thunder-winged apex of the skies.", glyph: "⚡", element_id: 3, stage: 3, rarity_id: 3, is_starter: 0, base_catch_rate: 0.12 },
+    { id: 10, code: "pebblet", display_name: "Pebblet", blurb: "A rolling pebble with stubborn eyes.", glyph: "🪨", element_id: 4, stage: 1, rarity_id: 1, is_starter: 1, base_catch_rate: 0.45 },
+    { id: 11, code: "boulderkin", display_name: "Boulderkin", blurb: "Its shell shrugs off all but the fiercest blows.", glyph: "🗿", element_id: 4, stage: 2, rarity_id: 2, is_starter: 0, base_catch_rate: 0.28 },
+    { id: 12, code: "titanox", display_name: "Titanox", blurb: "A living mountain that refuses to fall.", glyph: "🦏", element_id: 4, stage: 3, rarity_id: 3, is_starter: 0, base_catch_rate: 0.12 },
+    { id: 13, code: "shadegrub", display_name: "Shadegrub", blurb: "A shy shadow that feeds on quiet.", glyph: "🌑", element_id: 5, stage: 1, rarity_id: 1, is_starter: 1, base_catch_rate: 0.45 },
+    { id: 14, code: "umbrawisp", display_name: "Umbrawisp", blurb: "Slips between moments to strike.", glyph: "👻", element_id: 5, stage: 2, rarity_id: 2, is_starter: 0, base_catch_rate: 0.28 },
+    { id: 15, code: "voidrex", display_name: "Voidrex", blurb: "An abyss given teeth and will.", glyph: "👁️", element_id: 5, stage: 3, rarity_id: 3, is_starter: 0, base_catch_rate: 0.12 },
+    { id: 16, code: "sproutling", display_name: "Sproutling", blurb: "A seed-beast that sprouts after every nap.", glyph: "🌱", element_id: 6, stage: 1, rarity_id: 1, is_starter: 1, base_catch_rate: 0.45 },
+    { id: 17, code: "bloomara", display_name: "Bloomara", blurb: "Petals shield allies and poison foes.", glyph: "🌸", element_id: 6, stage: 2, rarity_id: 2, is_starter: 0, base_catch_rate: 0.28 },
+    { id: 18, code: "verdantis", display_name: "Verdantis", blurb: "The grove itself, walking.", glyph: "🌳", element_id: 6, stage: 3, rarity_id: 3, is_starter: 0, base_catch_rate: 0.12 },
+  ].map((s) => {
+    const el = elements.find((e) => e.id === s.element_id);
+    return { ...s, element: el, hue: el.hue, name: s.display_name };
   });
 
-  const starters = [1, 4, 7, 10, 13, 16]; // stage-1 of each line
-  const wildPool = pets.filter((p) => p.stage <= 2).map((p) => p.id);
+  const basePairs = {
+    1: [8, 6, 5, 4, 3],
+    2: [14, 10, 8, 7, 5],
+    3: [22, 15, 12, 11, 8],
+    4: [4, 9, 5, 6, 4],
+    5: [7, 15, 9, 10, 7],
+    6: [11, 23, 13, 15, 10],
+    7: [5, 5, 9, 3, 4],
+    8: [9, 8, 16, 6, 7],
+    9: [13, 12, 24, 9, 12],
+    10: [5, 7, 3, 9, 2],
+    11: [8, 12, 5, 16, 4],
+    12: [13, 18, 7, 24, 6],
+    13: [4, 5, 6, 3, 9],
+    14: [7, 8, 10, 6, 15],
+    15: [11, 12, 14, 9, 23],
+    16: [5, 7, 5, 5, 6],
+    17: [8, 12, 9, 9, 10],
+    18: [12, 18, 13, 14, 16],
+  };
 
-  const zones = [
-    { id: "emberfield", name: "Emberfield", elements: ["ember", "stone"], vibe: "Ash drifts over cracked earth." },
-    { id: "mistshore", name: "Mistshore", elements: ["tide", "gale"], vibe: "Fog curls between tidepools." },
-    { id: "shadehollow", name: "Shadehollow", elements: ["shade", "bloom"], vibe: "Roots whisper under dim light." },
-    { id: "highridge", name: "Highridge", elements: ["gale", "stone"], vibe: "Wind shears the cliff edge." },
+  let sbsId = 1;
+  const species_base_stats = [];
+  for (const [speciesId, values] of Object.entries(basePairs)) {
+    values.forEach((value, i) => {
+      species_base_stats.push({
+        id: sbsId++,
+        species_id: Number(speciesId),
+        stat_id: i + 1,
+        value,
+      });
+    });
+  }
+
+  const moves = [
+    { id: 1, code: "strike", display_name: "Strike", description: "A solid blow.", element_id: null, effect_kind: "strike", power: 100, accuracy: 1, energy_cost: 0, effect_payload: { mult: 1.0 } },
+    { id: 2, code: "guard", display_name: "Guard", description: "Brace and reduce damage taken.", element_id: null, effect_kind: "guard", power: 40, accuracy: 1, energy_cost: 0, effect_payload: { mult: 0.55, guarding: true } },
+    { id: 3, code: "burst", display_name: "Burst", description: "Risky all-out assault.", element_id: null, effect_kind: "burst", power: 155, accuracy: 0.9, energy_cost: 0, effect_payload: { mult: 1.55 } },
+    { id: 4, code: "cinder_jab", display_name: "Cinder Jab", description: "Ember poke that scorches.", element_id: 1, effect_kind: "strike", power: 110, accuracy: 1, energy_cost: 0, effect_payload: { mult: 1.1 } },
+    { id: 5, code: "tide_lash", display_name: "Tide Lash", description: "A whipping current.", element_id: 2, effect_kind: "strike", power: 110, accuracy: 1, energy_cost: 0, effect_payload: { mult: 1.1 } },
+    { id: 6, code: "gust_cut", display_name: "Gust Cut", description: "A slicing breeze.", element_id: 3, effect_kind: "strike", power: 105, accuracy: 1, energy_cost: 0, effect_payload: { mult: 1.05, crit_bonus: 5 } },
+    { id: 7, code: "stone_wall", display_name: "Stone Wall", description: "Raise a rocky guard.", element_id: 4, effect_kind: "guard", power: 30, accuracy: 1, energy_cost: 0, effect_payload: { mult: 0.4, guarding: true, def_buff: 2 } },
+    { id: 8, code: "umbra_spike", display_name: "Umbra Spike", description: "Strike from the blind spot.", element_id: 5, effect_kind: "burst", power: 140, accuracy: 0.92, energy_cost: 0, effect_payload: { mult: 1.4 } },
+    { id: 9, code: "bloom_soothe", display_name: "Bloom Soothe", description: "Restore a little vitality.", element_id: 6, effect_kind: "heal", power: 0, accuracy: 1, energy_cost: 0, effect_payload: { heal_pct: 0.18 } },
   ];
 
+  const elementalMoveByElement = { 1: 4, 2: 5, 3: 6, 4: 7, 5: 8, 6: 9 };
+  const species_moves = [];
+  let smId = 1;
+  for (const s of species) {
+    [
+      [1, 1],
+      [2, 2],
+      [3, 3],
+      [elementalMoveByElement[s.element_id], 4],
+    ].forEach(([moveId, slot]) => {
+      species_moves.push({
+        id: smId++,
+        species_id: s.id,
+        move_id: moveId,
+        unlock_stage: 1,
+        slot,
+      });
+    });
+  }
+
+  const evolution_paths = [
+    { id: 1, ancestor_species_id: 1, descendant_species_id: 2, sort_order: 1 },
+    { id: 2, ancestor_species_id: 2, descendant_species_id: 3, sort_order: 2 },
+    { id: 3, ancestor_species_id: 4, descendant_species_id: 5, sort_order: 1 },
+    { id: 4, ancestor_species_id: 5, descendant_species_id: 6, sort_order: 2 },
+    { id: 5, ancestor_species_id: 7, descendant_species_id: 8, sort_order: 1 },
+    { id: 6, ancestor_species_id: 8, descendant_species_id: 9, sort_order: 2 },
+    { id: 7, ancestor_species_id: 10, descendant_species_id: 11, sort_order: 1 },
+    { id: 8, ancestor_species_id: 11, descendant_species_id: 12, sort_order: 2 },
+    { id: 9, ancestor_species_id: 13, descendant_species_id: 14, sort_order: 1 },
+    { id: 10, ancestor_species_id: 14, descendant_species_id: 15, sort_order: 2 },
+    { id: 11, ancestor_species_id: 16, descendant_species_id: 17, sort_order: 1 },
+    { id: 12, ancestor_species_id: 17, descendant_species_id: 18, sort_order: 2 },
+  ];
+
+  let erId = 1;
+  const evolution_requirements = [
+    [1, "stat", 1, null, 14],
+    [2, "stat", 1, null, 24],
+    [2, "stat", 2, null, 16],
+    [2, "item", null, 3, 1],
+    [3, "stat", 2, null, 14],
+    [4, "stat", 2, null, 24],
+    [4, "stat", 4, null, 14],
+    [5, "stat", 3, null, 14],
+    [6, "stat", 3, null, 24],
+    [6, "stat", 5, null, 12],
+    [7, "stat", 4, null, 14],
+    [8, "stat", 4, null, 24],
+    [8, "stat", 2, null, 16],
+    [9, "stat", 5, null, 14],
+    [10, "stat", 5, null, 24],
+    [10, "stat", 3, null, 14],
+    [11, "stat", 2, null, 12],
+    [11, "stat", 5, null, 10],
+    [12, "stat", 2, null, 20],
+    [12, "stat", 4, null, 14],
+    [12, "stat", 5, null, 16],
+  ].map(([pathId, kind, statId, itemId, value]) => ({
+    id: erId++,
+    evolution_path_id: pathId,
+    requirement_kind: kind,
+    stat_id: statId,
+    item_id: itemId,
+    threshold_value: value,
+  }));
+
+  const zones = [
+    { id: 1, code: "emberfield", display_name: "Emberfield", vibe: "Ash drifts over cracked earth.", energy_cost: 2, min_player_level: 1 },
+    { id: 2, code: "mistshore", display_name: "Mistshore", vibe: "Fog curls between tidepools.", energy_cost: 2, min_player_level: 1 },
+    { id: 3, code: "shadehollow", display_name: "Shadehollow", vibe: "Roots whisper under dim light.", energy_cost: 2, min_player_level: 1 },
+    { id: 4, code: "highridge", display_name: "Highridge", vibe: "Wind shears the cliff edge.", energy_cost: 2, min_player_level: 1 },
+  ].map((z) => ({ ...z, name: z.display_name }));
+
+  let zeId = 1;
+  const zone_encounters = [
+    [1, 1, 40, 1, 1],
+    [1, 2, 15, 2, 2],
+    [1, 10, 30, 1, 1],
+    [1, 11, 10, 2, 2],
+    [2, 4, 40, 1, 1],
+    [2, 5, 15, 2, 2],
+    [2, 7, 30, 1, 1],
+    [2, 8, 10, 2, 2],
+    [3, 13, 35, 1, 1],
+    [3, 14, 15, 2, 2],
+    [3, 16, 35, 1, 1],
+    [3, 17, 15, 2, 2],
+    [4, 7, 30, 1, 1],
+    [4, 8, 15, 2, 2],
+    [4, 10, 30, 1, 1],
+    [4, 11, 15, 2, 2],
+  ].map(([zoneId, speciesId, weight, minS, maxS]) => ({
+    id: zeId++,
+    zone_id: zoneId,
+    species_id: speciesId,
+    weight,
+    min_stage: minS,
+    max_stage: maxS,
+    stat_variance_min: minS === 1 ? 0.72 : 0.8,
+    stat_variance_max: minS === 1 ? 1.0 : 1.05,
+  }));
+
+  const training_drills = stats.map((s, i) => ({
+    id: i + 1,
+    code: `${s.code}_drill`,
+    display_name: `${s.display_name} Drill`,
+    description: s.description,
+    stat_id: s.id,
+    energy_cost: 1,
+    base_gain: 1,
+    critical_chance: 0.18,
+    critical_bonus: 1,
+    coin_reward: 1,
+  }));
+
+  // Helpers used by the write-model interpreter
+  function speciesById(id) {
+    return species.find((s) => s.id === id);
+  }
+  function statById(id) {
+    return stats.find((s) => s.id === id);
+  }
+  function itemById(id) {
+    return items.find((i) => i.id === id);
+  }
+  function moveById(id) {
+    return moves.find((m) => m.id === id);
+  }
+  function zoneById(id) {
+    return zones.find((z) => z.id === id);
+  }
+  function zoneByCode(code) {
+    return zones.find((z) => z.code === code);
+  }
+  function baseStatsForSpecies(speciesId) {
+    return species_base_stats.filter((r) => r.species_id === speciesId);
+  }
+  function movesForSpecies(speciesId) {
+    return species_moves
+      .filter((sm) => sm.species_id === speciesId)
+      .sort((a, b) => a.slot - b.slot)
+      .map((sm) => ({ ...sm, move: moveById(sm.move_id) }));
+  }
+  function matchupMultiplier(attackerElementId, defenderElementId) {
+    if (!attackerElementId || !defenderElementId) return 1;
+    const row = element_matchups.find(
+      (m) =>
+        m.attacker_element_id === attackerElementId &&
+        m.defender_element_id === defenderElementId
+    );
+    return row ? row.multiplier : 1;
+  }
+  function starters() {
+    return species.filter((s) => s.is_starter).map((s) => s.id);
+  }
+
   return {
+    rarities,
+    elements,
+    element_matchups,
     stats,
-    pets,
-    pet_stats,
-    pet_evolutions: evolutions,
-    pet_evolution_stat_requirements,
-    starters,
-    wildPool,
+    items,
+    species,
+    species_base_stats,
+    moves,
+    species_moves,
+    evolution_paths,
+    evolution_requirements,
     zones,
+    zone_encounters,
+    training_drills,
+    // compat aliases used lightly by UI during transition
+    pets: species,
+    pet_stats: species_base_stats,
     now,
+    speciesById,
+    statById,
+    itemById,
+    moveById,
+    zoneById,
+    zoneByCode,
+    baseStatsForSpecies,
+    movesForSpecies,
+    matchupMultiplier,
+    starters,
   };
 })();

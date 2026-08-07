@@ -64,7 +64,7 @@ window.MorphUI = (() => {
         ${avatarHtml(p.pet)}
         <div class="pet-meta">
           <strong>${escapeHtml(p.nickname)}</strong>
-          <small>${escapeHtml(p.pet.name)} · Stage ${p.pet.stage}</small>
+          <small>${escapeHtml(p.pet.display_name || p.pet.name)} · Stage ${p.pet.stage}</small>
         </div>
         <div class="power-chip">${p.power}</div>
       </button>`
@@ -89,14 +89,14 @@ window.MorphUI = (() => {
       <div class="detail-hero">
         ${avatarHtml(p.pet)}
         <h2>${escapeHtml(p.nickname)}</h2>
-        <p>${escapeHtml(p.pet.name)} · ${escapeHtml(p.pet.blurb)}</p>
+        <p>${escapeHtml(p.pet.display_name || p.pet.name)} · ${escapeHtml(p.pet.blurb)}</p>
       </div>
       <div class="stat-list">
         ${p.stats
           .map(
             (s) => `
           <div class="stat-row">
-            <div class="name" style="color:${s.stat.color}">${s.stat.name}</div>
+            <div class="name" style="color:${s.stat.color}">${s.stat.display_name || s.stat.name}</div>
             <div class="bar"><span style="width:${Math.min(100, (s.value / maxStat) * 100)}%;background:${s.stat.color}"></span></div>
             <div class="val">${s.value}</div>
           </div>`
@@ -179,8 +179,8 @@ window.MorphUI = (() => {
       <button class="train-btn" data-stat="${s.stat_id}">
         <div class="swatch" style="background:${s.stat.color}"></div>
         <div>
-          <strong>${s.stat.name}</strong>
-          <small>${s.stat.desc} · now ${s.value}</small>
+          <strong>${s.stat.display_name || s.stat.name}</strong>
+          <small>${s.stat.description || s.stat.desc} · now ${s.value}</small>
         </div>
         <div class="power-chip">+1⚡</div>
       </button>`
@@ -194,7 +194,7 @@ window.MorphUI = (() => {
           toast(res.reason === "energy" ? "Out of energy — rest or wait" : "Can't train");
           return;
         }
-        toast(`+${res.gain} ${res.stat.name}`);
+        toast(`+${res.gain} ${res.stat.display_name || res.stat.name}${res.critical ? "!" : ""}`);
         refreshMeters();
         renderTrain();
       };
@@ -206,10 +206,10 @@ window.MorphUI = (() => {
     $("#zone-list").innerHTML = zones
       .map(
         (z) => `
-      <button class="zone-card" data-zone="${z.id}">
-        <h3>${escapeHtml(z.name)}</h3>
+      <button class="zone-card" data-zone="${z.code}">
+        <h3>${escapeHtml(z.display_name || z.name)}</h3>
         <p>${escapeHtml(z.vibe)}</p>
-        <div class="cost">Explore · 2 energy</div>
+        <div class="cost">Explore · ${z.energy_cost} energy</div>
       </button>`
       )
       .join("");
@@ -219,8 +219,8 @@ window.MorphUI = (() => {
     });
   }
 
-  function beginBattle(zoneId) {
-    const res = G().startBattle(zoneId);
+  function beginBattle(zoneCode) {
+    const res = G().startBattle(zoneCode);
     if (!res.ok) {
       toast(res.reason === "energy" ? "Need 2 energy" : "No active pet");
       refreshMeters();
@@ -236,6 +236,10 @@ window.MorphUI = (() => {
       youMax: res.youCombat.hp,
       wildHp: res.combat.hp,
       wildMax: res.combat.hp,
+      battleId: res.battleId,
+      youParticipantId: res.youParticipantId,
+      wildParticipantId: res.wildParticipantId,
+      turnNumber: 0,
       over: false,
     };
     refreshMeters();
@@ -251,7 +255,7 @@ window.MorphUI = (() => {
 
     root.innerHTML = `
       <div class="section-head">
-        <h1>${escapeHtml(b.zone.name)}</h1>
+        <h1>${escapeHtml(b.zone.display_name || b.zone.name)}</h1>
         <span>Battle</span>
       </div>
       <div class="battle">
@@ -307,12 +311,19 @@ window.MorphUI = (() => {
         wildCombat: battle.wildCombat,
         youHp: battle.youHp,
         wildHp: battle.wildHp,
+        youMax: battle.youMax,
+        wildMax: battle.wildMax,
+        battleId: battle.battleId,
+        youParticipantId: battle.youParticipantId,
+        wildParticipantId: battle.wildParticipantId,
+        turnNumber: battle.turnNumber,
       },
       action
     );
 
     battle.youHp = turn.youHp;
     battle.wildHp = turn.wildHp;
+    battle.turnNumber = turn.turnNumber;
 
     // update bars without full re-render to keep log
     const youBar = $(".fighter.you .hpbar > span");
@@ -346,14 +357,14 @@ window.MorphUI = (() => {
           <h3>Victory</h3>
           <p>+${turn.result.coinGain} coins${
           turn.result.trainBoost
-            ? ` · +1 ${turn.result.trainBoost.stat.name}`
+            ? ` · +1 ${turn.result.trainBoost.stat.display_name || turn.result.trainBoost.stat.name}`
             : ""
         }</p>
           <div class="action-row">
             ${
               turn.result.canCatch
-                ? `<button class="btn btn-primary" id="btn-catch">Catch it</button>`
-                : ""
+                ? `<button class="btn btn-primary" id="btn-catch">Catch · 1 Orb</button>`
+                : `<p style="grid-column:1/-1;color:var(--muted);margin:0 0 8px;font-size:0.9rem">No Morph Orbs left — win more battles to find them.</p>`
             }
             <button class="btn btn-secondary ${turn.result.canCatch ? "" : "wide"}" id="btn-leave">Return</button>
           </div>
@@ -361,13 +372,15 @@ window.MorphUI = (() => {
         const catchBtn = $("#btn-catch");
         if (catchBtn) {
           catchBtn.onclick = () => {
-            const c = G().tryCatch(battle);
+            const c = G().tryCatch(battle, 1);
             if (c.ok) {
               toast(`Caught ${c.pet.nickname}!`);
               leaveBattle();
+            } else if (c.reason === "no_orb") {
+              toast("No Morph Orbs");
             } else {
               toast("It broke free…");
-              catchBtn.remove();
+              if (G().inventoryQty(1) + G().inventoryQty(2) <= 0) catchBtn.remove();
             }
           };
         }
@@ -418,7 +431,7 @@ window.MorphUI = (() => {
             <div class="arrow">→</div>
             <div style="text-align:center">
               ${avatarHtml(p.evo.next)}
-              <strong>${escapeHtml(p.evo.next.name)}</strong>
+              <strong>${escapeHtml(p.evo.next.display_name || p.evo.next.name)}</strong>
             </div>
           </div>
           <div class="req-list">
@@ -426,7 +439,7 @@ window.MorphUI = (() => {
               .map(
                 (r) => `
               <div class="req ${r.met ? "met" : ""}">
-                <span>${r.stat.name}</span>
+                <span>${escapeHtml(r.label || r.stat.display_name || r.stat.name)}</span>
                 <span>${r.have} / ${r.needed}</span>
               </div>`
               )
@@ -457,16 +470,17 @@ window.MorphUI = (() => {
   }
 
   function renderStarters() {
-    const ids = window.MORPH_DATA.starters;
+    const ids = window.MORPH_DATA.starters();
     const grid = $("#starter-grid");
     grid.innerHTML = ids
       .map((id) => {
-        const pet = window.MORPH_DATA.pets.find((p) => p.id === id);
+        const pet = window.MORPH_DATA.speciesById(id);
+        const el = pet.element?.display_name || pet.element?.code || "";
         return `
         <button class="starter ${selectedStarter === id ? "selected" : ""}" data-id="${id}">
           ${avatarHtml(pet)}
-          <strong>${escapeHtml(pet.name)}</strong>
-          <small>${escapeHtml(pet.element)}</small>
+          <strong>${escapeHtml(pet.display_name)}</strong>
+          <small>${escapeHtml(el)}</small>
         </button>`;
       })
       .join("");
@@ -558,7 +572,7 @@ window.MorphUI = (() => {
     });
 
     // title creature cycle
-    const glyphs = window.MORPH_DATA.pets.filter((p) => p.stage === 3);
+    const glyphs = window.MORPH_DATA.species.filter((p) => p.stage === 3);
     let gi = 0;
     const orb = $("#title-orb");
     const glyph = $("#title-glyph");
