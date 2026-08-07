@@ -1,32 +1,29 @@
 # Morph
 
-A pocket pet RPG for your phone. Train stats, battle the wilds, evolve when thresholds wake.
+Pocket pet RPG — **data-driven DDD** with an MVC command pipeline:
 
-**Data-driven DDD** + **SOLID ES modules** — catalog tables own behavior; domain services interpret rows.
+`presentation → event → controller → service → action → ports/adapters`
 
 ## Docs
 
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — pipeline, ports, swap guide
 - [`DOMAIN.md`](./DOMAIN.md) — bounded contexts & ubiquitous language
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — SOLID module map
-- `schema.sql` / `seed.sql` — DDL + content pack
+- `schema.sql` / `seed.sql` — SQL DDL + content pack
 
-## Play
+## Run
 
 ```bash
-npx serve . -l 3000
+npx serve . -l 3000          # web UI
+npm run cli                  # same services via terminal events
 ```
 
-## Deploy to Vercel
+## Deploy (Vercel)
 
-Import the repo → Framework **Other** → no build → Deploy.
+Import repo → Framework **Other** → no build → Deploy.
 
-## Module map
+## Swap persistence later
 
-```
-js/main.js          composition root
-js/catalog/         content + queries
-js/domain/          energy, inventory, training, evolution, combat
-js/persistence/     localStorage adapter
-js/app/MorphGame.js application facade (UI port)
-js/ui/              screens + navigation
+```js
+import { createSqliteUnitOfWork } from "./js/infrastructure/persistence/sqlite/SqliteUnitOfWork.js";
+createApplication({ uow: createSqliteUnitOfWork(db) });
 ```

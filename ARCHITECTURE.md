@@ -1,37 +1,56 @@
-# Architecture (SOLID)
+# Architecture — enterprise DDD / MVC command flow
 
-Composition root: `js/main.js` — the only place that wires concrete adapters.
+## Pipeline
 
 ```
-main.js
-  ├── catalog/          Catalog BC (read model)
-  │     seed.js         Pure content tables
-  │     catalog.js      Query API
-  ├── domain/           Domain services (no UI, no storage)
-  │     energy.js
-  │     inventory.js
-  │     creature.js
-  │     training.js
-  │     events.js
-  │     evolution/      Requirement strategies + evolve service
-  │     combat/         Power, move strategies, encounters, battles
-  ├── persistence/      Adapter
-  │     store.js        LocalStorageGameStore
-  ├── app/
-  │     MorphGame.js    Application facade (UI port)
-  └── ui/               Presentation
-        app.js          Screen router
-        screens/*       One concern per screen
+Presentation (Web | CLI | future API)
+    ↓  emit named AppEvent
+EventBus
+    ↓
+Controller  (event → Request DTO + validate)
+    ↓
+Application Service
+    ↓
+Domain Action  (CreatePlayer, TrainCreature, …)
+    ↓
+Ports: CatalogPort · UnitOfWorkPort · ClockPort · RandomPort
+    ↓
+Adapters: SeedCatalog · LocalStorageUnitOfWork · SqliteUnitOfWork(stub) · …
+    ↓
+Response DTO (enriched for any UI)
 ```
 
-## SOLID mapping
+Presentations **never** import actions or persistence — only `bus.emit(AppEvents.*, payload)`.
 
-| Principle | How |
-|---|---|
-| **S**ingle responsibility | Seed ≠ queries ≠ evolve ≠ battle ≠ storage ≠ screens |
-| **O**pen/closed | New evolution kinds / move effects register as strategies; catalog rows extend content |
-| **L**iskov | Requirement evaluators share one shape (`{label, have, needed, met}`) |
-| **I**nterface segregation | UI talks to the Game facade only — not store or combat internals |
-| **D**ependency inversion | `createGame({ catalog, store })` receives ports; UI receives the game API |
+## Swap guide
 
-Domain rule interpreters stay data-driven: they never `switch` on species names.
+| Concern | Port | Now | Next |
+|---|---|---|---|
+| Content | `CatalogPort` | `SeedCatalog` | DB/CMS |
+| Persistence | `UnitOfWorkPort` | `LocalStorageUnitOfWork` | `SqliteUnitOfWork` → Postgres |
+| UI | EventBus | `WebApp` | `CliApp` / HTTP |
+
+```js
+// bootstrap/createApplication.js
+createApplication({ uow: createSqliteUnitOfWork(db) });
+```
+
+## Layout
+
+See `js/ARCHITECTURE.md` for the full module map, named actions, and DTO list.
+
+```
+js/bootstrap/          DI wiring
+js/ports/              contracts
+js/dto/                requests (validate) + responses (enrich)
+js/domain/actions/     named verbs
+js/application/        EventBus + services
+js/infrastructure/     adapters
+js/presentation/       web + cli
+```
+
+## CLI
+
+```bash
+npm run cli
+```
