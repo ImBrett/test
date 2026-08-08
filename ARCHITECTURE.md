@@ -1,56 +1,44 @@
-# Architecture — enterprise DDD / MVC command flow
-
-## Pipeline
+# Architecture
 
 ```
-Presentation (Web | CLI | future API)
-    ↓  emit named AppEvent
-EventBus
-    ↓
-Controller  (event → Request DTO + validate)
-    ↓
-Application Service
-    ↓
-Domain Action  (CreatePlayer, TrainCreature, …)
-    ↓
-Ports: CatalogPort · UnitOfWorkPort · ClockPort · RandomPort
-    ↓
-Adapters: SeedCatalog · LocalStorageUnitOfWork · SqliteUnitOfWork(stub) · …
-    ↓
-Response DTO (enriched for any UI)
+Presentation → Event → Controller → Service → Action → Ports → Adapters → Response DTO
 ```
 
-Presentations **never** import actions or persistence — only `bus.emit(AppEvents.*, payload)`.
+## Folder layout
 
-## Swap guide
+```
+js/
+  Domain/
+    Events/           domain event types + raise helper
+    Models/           Player, Creature, Battle factories
+    DTOs/             Requests (validate) · Responses (enrich)
+    ValueObjects/     Energy, Nickname, Money, StatValue
+    Ports/            Catalog · UnitOfWork · Clock · Random
+    Rules/            combat, evolution requirements, enrichers
+  Application/
+    Events/           AppEvents (integration / UI commands)
+    Actions/          CreatePlayer, TrainCreature, …
+    Services/         orchestrate actions → DTOs
+  Infrastructure/
+    EventBus/
+    DependencyContainer/   composition root
+    Persistence/
+      Memory/              localStorage UoW
+      SQLite/              stub for later
+    Catalog/  Clock/  Random/
+  Presentation/
+    HTTP/             browser UI + controllers
+    CLI/              terminal adapter (same bus)
+  main.js             HTTP entry
+```
 
-| Concern | Port | Now | Next |
-|---|---|---|---|
-| Content | `CatalogPort` | `SeedCatalog` | DB/CMS |
-| Persistence | `UnitOfWorkPort` | `LocalStorageUnitOfWork` | `SqliteUnitOfWork` → Postgres |
-| UI | EventBus | `WebApp` | `CliApp` / HTTP |
+## Swap persistence / UI
 
 ```js
-// bootstrap/createApplication.js
+import { createApplication } from "./Infrastructure/DependencyContainer/Container.js";
+import { createSqliteUnitOfWork } from "./Infrastructure/Persistence/SQLite/SqliteUnitOfWork.js";
+
 createApplication({ uow: createSqliteUnitOfWork(db) });
 ```
 
-## Layout
-
-See `js/ARCHITECTURE.md` for the full module map, named actions, and DTO list.
-
-```
-js/bootstrap/          DI wiring
-js/ports/              contracts
-js/dto/                requests (validate) + responses (enrich)
-js/domain/actions/     named verbs
-js/application/        EventBus + services
-js/infrastructure/     adapters
-js/presentation/       web + cli
-```
-
-## CLI
-
-```bash
-npm run cli
-```
+CLI: `npm run cli` — same container, no DOM.

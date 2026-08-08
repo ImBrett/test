@@ -1,29 +1,27 @@
 # Morph
 
-Pocket pet RPG — **data-driven DDD** with an MVC command pipeline:
+Pocket pet RPG — data-driven DDD with MVC command flow:
 
 `presentation → event → controller → service → action → ports/adapters`
 
-## Docs
+## Layout
 
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — pipeline, ports, swap guide
-- [`DOMAIN.md`](./DOMAIN.md) — bounded contexts & ubiquitous language
-- `schema.sql` / `seed.sql` — SQL DDL + content pack
+```
+Domain/           Events · Models · DTOs · ValueObjects · Ports · Rules
+Application/      Events · Actions · Services
+Infrastructure/   EventBus · DependencyContainer · Persistence/{Memory,SQLite}
+Presentation/     HTTP · CLI
+```
+
+See [`ARCHITECTURE.md`](./ARCHITECTURE.md) and [`DOMAIN.md`](./DOMAIN.md).
 
 ## Run
 
 ```bash
-npx serve . -l 3000          # web UI
-npm run cli                  # same services via terminal events
+npx serve . -l 3000    # HTTP UI
+npm run cli            # same pipeline in a terminal
 ```
 
-## Deploy (Vercel)
+## Deploy
 
-Import repo → Framework **Other** → no build → Deploy.
-
-## Swap persistence later
-
-```js
-import { createSqliteUnitOfWork } from "./js/infrastructure/persistence/sqlite/SqliteUnitOfWork.js";
-createApplication({ uow: createSqliteUnitOfWork(db) });
-```
+Vercel → Framework **Other** → no build → Deploy.

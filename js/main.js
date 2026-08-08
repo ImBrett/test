@@ -1,9 +1,9 @@
 /**
- * Web composition root.
+ * HTTP (browser) composition root.
  * presentation → event → controller → service → action
  */
-import { createApplication } from "./bootstrap/createApplication.js";
-import { bootWebPresentation } from "./presentation/web/WebApp.js";
+import { createApplication } from "./Infrastructure/DependencyContainer/Container.js";
+import { bootHttpPresentation } from "./Presentation/HTTP/HttpApp.js";
 
 const app = createApplication();
-bootWebPresentation(app);
+bootHttpPresentation(app);

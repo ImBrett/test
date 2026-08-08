@@ -7,6 +7,6 @@
   "scripts": {
     "dev": "npx serve . -l 3000",
     "start": "npx serve . -l 3000",
-    "cli": "node js/presentation/cli/CliApp.js"
+    "cli": "node js/Presentation/CLI/CliApp.js"
   }
 }
