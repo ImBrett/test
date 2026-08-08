@@ -1,0 +1,12 @@
+{
+  "name": "morph-rpg",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Morph — pocket pet RPG with DDD command pipeline",
+  "scripts": {
+    "dev": "npx serve . -l 3000",
+    "start": "npx serve . -l 3000",
+    "cli": "node js/Presentation/CLI/CliApp.js"
+  }
+}
