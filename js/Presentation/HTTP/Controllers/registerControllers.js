@@ -25,6 +25,7 @@ export function registerControllers(bus, services) {
 
   bus.on(AppEvents.TRAIN_CREATURE, (e) => trainingService.train(e.payload));
   bus.on(AppEvents.EVOLVE_CREATURE, (e) => evolutionService.evolve(e.payload));
+  bus.on(AppEvents.DEVOLVE_CREATURE, (e) => evolutionService.devolve(e.payload));
   bus.on(AppEvents.EXPLORE_ZONE, (e) => exploreService.startEncounter(e.payload));
   bus.on(AppEvents.BATTLE_ACTION, (e) => battleService.act(e.payload));
   bus.on(AppEvents.CATCH_CREATURE, (e) => battleService.catch(e.payload));

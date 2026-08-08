@@ -11,6 +11,7 @@ import {
   SetActiveCreatureRequest,
   RenameCreatureRequest,
   EvolveCreatureRequest,
+  DevolveCreatureRequest,
   ExploreZoneRequest,
   BattleActionRequest,
   CatchCreatureRequest,
@@ -50,6 +51,7 @@ export function createApplicationServices(deps) {
       setActiveCreature,
       renameCreature,
       evolveCreature,
+      devolveCreature,
       startEncounter,
       resolveBattleTurn,
       catchWildCreature,
@@ -146,6 +148,15 @@ export function createApplicationServices(deps) {
       if (!result.ok) return result;
       return ok({
         evolution: result.data,
+        state: getAppState(),
+      });
+    }),
+    devolve: guard((raw) => {
+      const req = DevolveCreatureRequest.from(raw);
+      const result = devolveCreature.execute(req);
+      if (!result.ok) return result;
+      return ok({
+        devolution: result.data,
         state: getAppState(),
       });
     }),

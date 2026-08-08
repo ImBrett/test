@@ -1,4 +1,4 @@
-/** Polymorphic evolution requirement evaluators (OCP). */
+/** Polymorphic evolution requirement evaluators + branching chain projection. */
 
 export function createRequirementEvaluators({ catalog, uow }) {
   return {
@@ -48,15 +48,71 @@ export function createRequirementEvaluators({ catalog, uow }) {
   };
 }
 
-export function evaluateAll(evaluators, catalog, creature) {
-  const path = catalog.evolutionPathForSpecies(creature.species_id);
-  if (!path) return { canEvolve: false, ready: false, next: null, path: null, reqs: [] };
+export function parseLineage(creature) {
+  try {
+    const raw = creature.lineage_json;
+    const arr = typeof raw === "string" ? JSON.parse(raw || "[]") : raw || [];
+    if (Array.isArray(arr) && arr.length) return arr.map(Number);
+  } catch {
+    /* fall through */
+  }
+  return [creature.species_id];
+}
+
+export function evaluateBranch(evaluators, catalog, creature, path) {
   const next = catalog.speciesById(path.descendant_species_id);
   const reqs = catalog.requirementsForPath(path.id).map((r) => {
     const fn = evaluators[r.requirement_kind];
     return fn
       ? fn(r, creature)
-      : { kind: r.requirement_kind, label: r.requirement_kind, needed: r.threshold_value, have: 0, met: false };
+      : {
+          kind: r.requirement_kind,
+          label: r.requirement_kind,
+          needed: r.threshold_value,
+          have: 0,
+          met: false,
+        };
   });
-  return { canEvolve: true, ready: reqs.every((r) => r.met), next, path, reqs };
+  return {
+    pathId: path.id,
+    branchIndex: path.branch_index,
+    label: path.label,
+    ready: reqs.every((r) => r.met),
+    next,
+    reqs,
+  };
+}
+
+/**
+ * Full evolution projection for a creature:
+ * branches from current form, devolve eligibility, lineage, and whole-tree view.
+ */
+export function evaluateEvolutionState(evaluators, catalog, creature) {
+  const lineage = parseLineage(creature);
+  const rootId = lineage[0] || creature.species_id;
+  const paths = catalog.evolutionPathsFrom(creature.species_id);
+  const branches = paths.map((p) => evaluateBranch(evaluators, catalog, creature, p));
+  const canDevolve = lineage.length > 1;
+  const ancestorId = canDevolve ? lineage[lineage.length - 2] : null;
+  const ancestor = ancestorId ? catalog.speciesById(ancestorId) : null;
+
+  return {
+    canEvolve: branches.length > 0,
+    canDevolve,
+    ready: branches.some((b) => b.ready),
+    branches,
+    // compat: first ready branch or first branch
+    next: (branches.find((b) => b.ready) || branches[0] || null)?.next || null,
+    path: paths[0] || null,
+    reqs: (branches.find((b) => b.ready) || branches[0] || null)?.reqs || [],
+    lineage,
+    lineageSpecies: lineage.map((id) => catalog.speciesById(id)).filter(Boolean),
+    ancestor,
+    tree: catalog.buildEvolutionTree(rootId),
+  };
+}
+
+/** @deprecated prefer evaluateEvolutionState */
+export function evaluateAll(evaluators, catalog, creature) {
+  return evaluateEvolutionState(evaluators, catalog, creature);
 }

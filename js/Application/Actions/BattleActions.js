@@ -198,9 +198,7 @@ export function createResolveBattleTurnAction({ catalog, uow, clock, random, mov
           trainBoost = { stat: catalog.statById(pick.stat_id), value: pick.value };
         }
         if (random.next() < 0.35) uow.addInventory(1, 1);
-        if (battleSession.wild.species.element_id === 1 && random.next() < 0.12) {
-          uow.addInventory(3, 1);
-        }
+        if (random.next() < 0.08) uow.addInventory(3, 1); // Apex Seal
         // mark battle — we don't keep mutable battle row refs easily; append event
         appendEvent(uow, player.id, "Battle", battleSession.battleId, "BattleWon", {
           coinGain,

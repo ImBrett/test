@@ -85,9 +85,27 @@ export class RenameCreatureRequest {
 export class EvolveCreatureRequest {
   constructor(raw) {
     this.creatureId = Number(raw?.creatureId);
+    this.pathId = Number(raw?.pathId);
   }
   static from(raw) {
     const dto = new EvolveCreatureRequest(raw);
+    dto.validate();
+    return dto;
+  }
+  validate() {
+    assertValid([
+      ...requireInt(this.creatureId, "creatureId", { min: 1 }),
+      ...requireInt(this.pathId, "pathId", { min: 1 }),
+    ]);
+  }
+}
+
+export class DevolveCreatureRequest {
+  constructor(raw) {
+    this.creatureId = Number(raw?.creatureId);
+  }
+  static from(raw) {
+    const dto = new DevolveCreatureRequest(raw);
     dto.validate();
     return dto;
   }

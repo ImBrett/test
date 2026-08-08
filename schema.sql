@@ -105,7 +105,7 @@ CREATE TABLE species (
   blurb VARCHAR(160) NOT NULL,
   glyph VARCHAR(8) NOT NULL,               -- presentation seed (emoji / icon key)
   element_id INTEGER NOT NULL,
-  stage INTEGER NOT NULL CHECK (stage BETWEEN 1 AND 3),
+  stage INTEGER NOT NULL CHECK (stage BETWEEN 1 AND 5), -- Spark→Rookie→Champion→Ultimate→Apex
   rarity_id INTEGER NOT NULL,
   is_starter INTEGER NOT NULL DEFAULT 0 CHECK (is_starter IN (0, 1)),
   base_catch_rate REAL NOT NULL DEFAULT 0.35,
@@ -146,7 +146,7 @@ CREATE TABLE species_moves (
   id INTEGER PRIMARY KEY NOT NULL,
   species_id INTEGER NOT NULL,
   move_id INTEGER NOT NULL,
-  unlock_stage INTEGER NOT NULL DEFAULT 1 CHECK (unlock_stage BETWEEN 1 AND 3),
+  unlock_stage INTEGER NOT NULL DEFAULT 1 CHECK (unlock_stage BETWEEN 1 AND 5),
   slot INTEGER NOT NULL DEFAULT 1 CHECK (slot BETWEEN 1 AND 4),
   FOREIGN KEY (species_id) REFERENCES species(id),
   FOREIGN KEY (move_id) REFERENCES moves(id),
@@ -154,15 +154,19 @@ CREATE TABLE species_moves (
   UNIQUE (species_id, slot)
 );
 
--- Evolution path: ancestor species → descendant species (aggregate root).
+-- Evolution path: ancestor → descendant (branching tree, Digimon-style).
+-- Max 3 branches from any ancestor (enforced by branch_index + app checks).
 CREATE TABLE evolution_paths (
   id INTEGER PRIMARY KEY NOT NULL,
   ancestor_species_id INTEGER NOT NULL,
   descendant_species_id INTEGER NOT NULL,
+  branch_index INTEGER NOT NULL DEFAULT 1 CHECK (branch_index BETWEEN 1 AND 3),
+  label VARCHAR(32),                         -- optional branch label (e.g. "Might path")
   sort_order INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY (ancestor_species_id) REFERENCES species(id),
   FOREIGN KEY (descendant_species_id) REFERENCES species(id),
-  UNIQUE (ancestor_species_id, descendant_species_id)
+  UNIQUE (ancestor_species_id, descendant_species_id),
+  UNIQUE (ancestor_species_id, branch_index)
 );
 
 -- Polymorphic, data-driven gates. Interpreter matches requirement_kind.
@@ -266,6 +270,8 @@ CREATE TABLE player_creatures (
   level INTEGER NOT NULL DEFAULT 1 CHECK (level >= 1),
   experience INTEGER NOT NULL DEFAULT 0 CHECK (experience >= 0),
   battles_won INTEGER NOT NULL DEFAULT 0 CHECK (battles_won >= 0),
+  -- Ordered species ids from Spark root → current (JSON array). Used for chain UI + devolve.
+  lineage_json TEXT NOT NULL DEFAULT '[]',
   obtained_at DATETIME NOT NULL,
   is_active INTEGER NOT NULL DEFAULT 0 CHECK (is_active IN (0, 1)),
   FOREIGN KEY (player_id) REFERENCES players(id),

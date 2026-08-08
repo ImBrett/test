@@ -45,7 +45,7 @@ export function bootHttpPresentation({ bus, services, catalog }) {
         ${avatarHtml(p.species)}
         <div class="pet-meta">
           <strong>${escapeHtml(p.nickname)}</strong>
-          <small>${escapeHtml(p.species.name)} · Stage ${p.species.stage}</small>
+          <small>${escapeHtml(p.species.name)} · ${escapeHtml(p.species.stageName || `Stage ${p.species.stage}`)}</small>
         </div>
         <div class="power-chip">${p.power}</div>
       </button>`
@@ -305,58 +305,132 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     showScreen("screen-explore");
   }
 
+  function renderTreeNode(node, depth = 0) {
+    if (!node) return "";
+    const cls = [
+      "evo-node",
+      node.isCurrent ? "current" : "",
+      node.onLineage ? "on-lineage" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    const kids = (node.branches || [])
+      .map(
+        (b) => `
+        <div class="evo-branch">
+          <div class="evo-branch-label">${escapeHtml(b.label || "")}</div>
+          ${renderTreeNode(b.node, depth + 1)}
+        </div>`
+      )
+      .join("");
+    return `
+      <div class="${cls}" style="--depth:${depth}">
+        <div class="evo-node-card">
+          ${avatarHtml(node)}
+          <strong>${escapeHtml(node.name)}</strong>
+          <small>${escapeHtml(node.stageName)}</small>
+        </div>
+        ${kids ? `<div class="evo-children">${kids}</div>` : ""}
+      </div>`;
+  }
+
   function renderEvolve() {
     paintMeters(state);
-    const evolvable = state.party.filter((p) => p.evolution.canEvolve);
     const list = $("#evo-list");
     if (!state.party.length) {
       list.innerHTML = `<div class="empty">No beasts to evolve yet.</div>`;
       return;
     }
-    if (!evolvable.length) {
-      list.innerHTML = `<div class="empty">Every beast is fully evolved — or needs more training.</div>`;
-      return;
-    }
-    list.innerHTML = evolvable
+
+    list.innerHTML = state.party
       .map((p) => {
-        const ready = p.evolution.ready;
-        return `
-        <div class="evo-card ${ready ? "ready" : ""}">
-          <div class="evo-path">
-            <div style="text-align:center">
-              ${avatarHtml(p.species)}
-              <strong>${escapeHtml(p.nickname)}</strong>
-            </div>
-            <div class="arrow">→</div>
-            <div style="text-align:center">
-              ${avatarHtml(p.evolution.next)}
-              <strong>${escapeHtml(p.evolution.next.name)}</strong>
-            </div>
-          </div>
-          <div class="req-list">
-            ${p.evolution.requirements
+        const evo = p.evolution;
+        const lineageTrail = (evo.lineageSpecies || [])
+          .map((s) => `${s.glyph} ${s.name}`)
+          .join(" → ");
+        const branchesHtml = (evo.branches || [])
+          .map((b) => {
+            const reqs = (b.requirements || [])
               .map(
                 (r) => `
-              <div class="req ${r.met ? "met" : ""}">
-                <span>${escapeHtml(r.label)}</span>
-                <span>${r.have} / ${r.needed}</span>
-              </div>`
+                <div class="req ${r.met ? "met" : ""}">
+                  <span>${escapeHtml(r.label)}</span>
+                  <span>${r.have} / ${r.needed}</span>
+                </div>`
               )
-              .join("")}
-          </div>
-          <button class="btn ${ready ? "btn-primary" : "btn-secondary"} wide" data-evo="${p.id}" ${
-            ready ? "" : "disabled"
-          }>${ready ? "Evolve" : "Keep training"}</button>
-        </div>`;
+              .join("");
+            return `
+              <div class="branch-card ${b.ready ? "ready" : ""}">
+                <div class="branch-head">
+                  ${avatarHtml(b.next)}
+                  <div>
+                    <strong>${escapeHtml(b.next.name)}</strong>
+                    <small>${escapeHtml(b.label || "")} · ${escapeHtml(b.next.stageName)}</small>
+                  </div>
+                </div>
+                <div class="req-list">${reqs}</div>
+                <button class="btn ${b.ready ? "btn-primary" : "btn-secondary"} wide"
+                  data-evolve="${p.id}" data-path="${b.pathId}" ${b.ready ? "" : "disabled"}>
+                  ${b.ready ? `Evolve → ${escapeHtml(b.next.name)}` : "Keep training"}
+                </button>
+              </div>`;
+          })
+          .join("");
+
+        return `
+          <div class="evo-card ${evo.ready ? "ready" : ""}">
+            <div class="evo-card-head">
+              ${avatarHtml(p.species)}
+              <div>
+                <strong>${escapeHtml(p.nickname)}</strong>
+                <small>${escapeHtml(p.species.stageName)} · ${escapeHtml(p.species.name)}</small>
+              </div>
+            </div>
+            <div class="lineage-trail">${escapeHtml(lineageTrail || p.species.name)}</div>
+            <div class="evo-tree" aria-label="Evolution chain">
+              ${renderTreeNode(evo.tree)}
+            </div>
+            ${
+              evo.branches?.length
+                ? `<h3 class="evo-subhead">Branches</h3><div class="branch-grid">${branchesHtml}</div>`
+                : `<p class="empty" style="padding:12px 0">Apex form — no further evolutions.</p>`
+            }
+            ${
+              evo.canDevolve
+                ? `<button class="btn btn-danger wide" data-devolve="${p.id}" style="margin-top:12px">
+                    Devolve → ${escapeHtml(evo.ancestor.name)}
+                    <small style="display:block;font-weight:500;opacity:.8">Resets stats to ${escapeHtml(evo.ancestor.name)} base</small>
+                  </button>`
+                : ""
+            }
+          </div>`;
       })
       .join("");
-    list.querySelectorAll("[data-evo]").forEach((btn) => {
+
+    list.querySelectorAll("[data-evolve]").forEach((btn) => {
       btn.onclick = async () => {
         const res = await dispatch(AppEvents.EVOLVE_CREATURE, {
-          creatureId: Number(btn.dataset.evo),
+          creatureId: Number(btn.dataset.evolve),
+          pathId: Number(btn.dataset.path),
         });
         if (res?.ok) {
           toast(`${res.data.evolution.from} → ${res.data.evolution.to}!`);
+          renderEvolve();
+        }
+      };
+    });
+    list.querySelectorAll("[data-devolve]").forEach((btn) => {
+      btn.onclick = async () => {
+        const pet = state.party.find((x) => x.id === Number(btn.dataset.devolve));
+        const okConfirm = confirm(
+          `Devolve ${pet?.nickname} to ${pet?.evolution.ancestor.name}? Stats reset to base.`
+        );
+        if (!okConfirm) return;
+        const res = await dispatch(AppEvents.DEVOLVE_CREATURE, {
+          creatureId: Number(btn.dataset.devolve),
+        });
+        if (res?.ok) {
+          toast(`${res.data.devolution.from} → ${res.data.devolution.to} (stats reset)`);
           renderEvolve();
         }
       };
@@ -431,7 +505,7 @@ export function bootHttpPresentation({ bus, services, catalog }) {
   });
 
   // title orb
-  const glyphs = catalog.species.filter((p) => p.stage === 3);
+  const glyphs = catalog.species.filter((p) => p.stage === 5);
   let gi = 0;
   setInterval(() => {
     gi = (gi + 1) % glyphs.length;

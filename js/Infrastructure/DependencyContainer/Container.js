@@ -14,7 +14,10 @@ import {
   createSetActiveCreatureAction,
   createRenameCreatureAction,
 } from "../../Application/Actions/PartyActions.js";
-import { createEvolveCreatureAction } from "../../Application/Actions/EvolveCreatureAction.js";
+import {
+  createEvolveCreatureAction,
+  createDevolveCreatureAction,
+} from "../../Application/Actions/EvolveCreatureAction.js";
 import {
   createStartEncounterAction,
   createResolveBattleTurnAction,
@@ -58,6 +61,7 @@ export function createApplication(options = {}) {
     setActiveCreature: createSetActiveCreatureAction({ uow }),
     renameCreature: createRenameCreatureAction({ catalog, uow }),
     evolveCreature: createEvolveCreatureAction({ catalog, uow, evaluators }),
+    devolveCreature: createDevolveCreatureAction({ catalog, uow }),
     startEncounter: createStartEncounterAction({
       catalog,
       uow,

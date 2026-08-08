@@ -14,7 +14,10 @@
  * @property {(speciesId: number) => object[]} movesForSpecies
  * @property {(a: number|null, b: number|null) => number} matchupMultiplier
  * @property {() => number[]} starterSpeciesIds
- * @property {(speciesId: number) => object|undefined} evolutionPathForSpecies
+ * @property {(speciesId: number) => object[]} evolutionPathsFrom
+ * @property {(speciesId: number) => object|undefined} evolutionPathTo
+ * @property {(rootSpeciesId: number) => object} buildEvolutionTree
+ * @property {(pathId: number) => object|undefined} pathById
  * @property {(pathId: number) => object[]} requirementsForPath
  * @property {(statId: number) => object|undefined} drillForStat
  * @property {(zoneId: number) => object[]} encountersForZone

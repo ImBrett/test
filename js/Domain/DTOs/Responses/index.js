@@ -11,7 +11,43 @@ export function toStatDto(row) {
   };
 }
 
+function toSpeciesBrief(sp) {
+  if (!sp) return null;
+  return {
+    id: sp.id,
+    name: sp.display_name,
+    glyph: sp.glyph,
+    hue: sp.hue,
+    stage: sp.stage,
+    stageName: sp.stage_name,
+  };
+}
+
+function toTreeDto(node, currentSpeciesId, lineageSet) {
+  if (!node) return null;
+  return {
+    ...toSpeciesBrief({
+      id: node.speciesId,
+      display_name: node.name,
+      glyph: node.glyph,
+      hue: node.hue,
+      stage: node.stage,
+      stage_name: node.stageName,
+    }),
+    isCurrent: node.speciesId === currentSpeciesId,
+    onLineage: lineageSet.has(node.speciesId),
+    branches: (node.branches || []).map((b) => ({
+      pathId: b.pathId,
+      branchIndex: b.branchIndex,
+      label: b.label,
+      node: toTreeDto(b.node, currentSpeciesId, lineageSet),
+    })),
+  };
+}
+
 export function toCreatureDto(enriched) {
+  const evo = enriched.evo;
+  const lineageSet = new Set((evo?.lineage || [enriched.species.id]).map(Number));
   return {
     id: enriched.id,
     nickname: enriched.nickname,
@@ -21,6 +57,7 @@ export function toCreatureDto(enriched) {
     isActive: !!enriched.is_active,
     power: enriched.power,
     obtainedAt: enriched.obtained_at,
+    lineage: (evo?.lineage || []).map((id) => id),
     species: {
       id: enriched.species.id,
       code: enriched.species.code,
@@ -29,6 +66,7 @@ export function toCreatureDto(enriched) {
       glyph: enriched.species.glyph,
       hue: enriched.species.hue,
       stage: enriched.species.stage,
+      stageName: enriched.species.stage_name,
       element: enriched.species.element?.display_name ?? null,
       elementId: enriched.species.element_id,
     },
@@ -40,27 +78,38 @@ export function toCreatureDto(enriched) {
       name: m.move.display_name,
       effectKind: m.move.effect_kind,
     })),
-    evolution: enriched.evo
+    evolution: evo
       ? {
-          canEvolve: enriched.evo.canEvolve,
-          ready: enriched.evo.ready,
-          next: enriched.evo.next
-            ? {
-                id: enriched.evo.next.id,
-                name: enriched.evo.next.display_name,
-                glyph: enriched.evo.next.glyph,
-                hue: enriched.evo.next.hue,
-              }
-            : null,
-          requirements: (enriched.evo.reqs || []).map((r) => ({
-            kind: r.kind,
-            label: r.label,
-            have: r.have,
-            needed: r.needed,
-            met: r.met,
+          canEvolve: evo.canEvolve,
+          canDevolve: evo.canDevolve,
+          ready: evo.ready,
+          ancestor: toSpeciesBrief(evo.ancestor),
+          branches: (evo.branches || []).map((b) => ({
+            pathId: b.pathId,
+            branchIndex: b.branchIndex,
+            label: b.label,
+            ready: b.ready,
+            next: toSpeciesBrief(b.next),
+            requirements: (b.reqs || []).map((r) => ({
+              kind: r.kind,
+              label: r.label,
+              have: r.have,
+              needed: r.needed,
+              met: r.met,
+            })),
           })),
+          lineageSpecies: (evo.lineageSpecies || []).map(toSpeciesBrief),
+          tree: toTreeDto(evo.tree, enriched.species.id, lineageSet),
         }
-      : { canEvolve: false, ready: false, next: null, requirements: [] },
+      : {
+          canEvolve: false,
+          canDevolve: false,
+          ready: false,
+          ancestor: null,
+          branches: [],
+          lineageSpecies: [],
+          tree: null,
+        },
   };
 }
 

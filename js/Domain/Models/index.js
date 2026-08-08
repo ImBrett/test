@@ -24,11 +24,14 @@ export function createCreatureModel({
   battlesWon = 0,
   obtainedAt,
   isActive = false,
+  lineage = null,
 }) {
   const nick =
     nickname != null && String(nickname).trim()
       ? new Nickname(nickname).value
       : Nickname.fromSpeciesDefault(speciesDisplayName).value;
+
+  const lineageIds = lineage && lineage.length ? lineage : [speciesId];
 
   return {
     id,
@@ -38,6 +41,7 @@ export function createCreatureModel({
     level,
     experience,
     battles_won: battlesWon,
+    lineage_json: JSON.stringify(lineageIds),
     obtained_at: obtainedAt,
     is_active: isActive ? 1 : 0,
   };

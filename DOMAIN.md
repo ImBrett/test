@@ -52,15 +52,15 @@ Cross-context references use IDs only (no shared mutable state).
 | Zone | Explore location with weighted spawns | `zones` / `zone_encounters` |
 | Battle | Combat aggregate for one encounter | `battles` |
 
-## Invariants (enforced in domain services + DB checks)
+## Evolution (Digimon-style)
 
-1. A creature belongs to exactly one player; nickname defaults to species `display_name` at capture.
-2. Creature stats are seeded from `species_base_stats` on obtain; training mutates instance rows only.
-3. Evolution is allowed iff **all** `evolution_requirements` for a path are satisfied.
-4. On evolve: `species_id` changes; trained surplus over old base is preserved atop new base.
-5. At most one `is_active` creature per player (party leader); party slots ≤ 6.
-6. Energy cannot go negative; regen is driven by `player_resources.energy_regen_seconds`.
-7. Battle actions append; battle `status` transitions are monotonic (`active` → terminal).
+1. Stages: **Spark → Rookie → Champion → Ultimate → Apex** (`species.stage` 1–5).
+2. From any form, at most **3 branches** (`evolution_paths.branch_index`).
+3. Evolve only if **all** requirements on the chosen path are met.
+4. Creature stores `lineage_json` (Spark → … → current) for chain UI and devolve.
+5. On evolve: carry trained surplus over new bases; push species onto lineage.
+6. On devolve: pop lineage; **reset stats to ancestor base** (no free re-train exploit).
+
 
 ## Data-driven rule interpreters
 
@@ -111,7 +111,5 @@ spend energy_cost; gain base_gain (+ critical_bonus on roll)
 ## Files
 
 - `schema.sql` / `seed.sql` — DDL + content pack
-- `DOMAIN.md` — bounded contexts & ubiquitous language
-- `ARCHITECTURE.md` — SOLID module layout
-- `js/main.js` — composition root (ES modules)
-- `js/catalog/` · `js/domain/` · `js/persistence/` · `js/app/` · `js/ui/`
+- `ARCHITECTURE.md` — layered folder map + swap guide
+- `js/Domain/` · `js/Application/` · `js/Infrastructure/` · `js/Presentation/`

@@ -1,5 +1,4 @@
-/** Shared creature enrichment + energy regen helpers used by application actions. */
-import { evaluateAll } from "./EvolutionRequirements.js";
+import { evaluateEvolutionState } from "./EvolutionRequirements.js";
 import { Energy } from "../ValueObjects/Energy.js";
 import { raiseDomainEvent } from "../Events/DomainEvents.js";
 
@@ -13,7 +12,7 @@ export function enrichCreature(catalog, uow, evaluators, creature) {
     .movesForCreature(creature.id)
     .sort((a, b) => a.slot - b.slot)
     .map((m) => ({ ...m, move: catalog.moveById(m.move_id) }));
-  const evo = evaluateAll(evaluators, catalog, creature);
+  const evo = evaluateEvolutionState(evaluators, catalog, creature);
   return {
     ...creature,
     species,

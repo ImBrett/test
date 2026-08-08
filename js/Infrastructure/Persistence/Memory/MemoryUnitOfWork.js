@@ -1,5 +1,5 @@
-const SAVE_KEY = "morph_rpg_v3";
-const LEGACY_KEYS = ["morph_rpg_v2", "morph_rpg_v1"];
+const SAVE_KEY = "morph_rpg_v4";
+const LEGACY_KEYS = ["morph_rpg_v3", "morph_rpg_v2", "morph_rpg_v1"];
 
 export function emptyState() {
   return {
@@ -133,7 +133,11 @@ export function createMemoryUnitOfWork(storage = globalThis.localStorage) {
     },
     insertCreature: (row) => {
       const id = state.nextIds.player_creatures++;
-      const creature = { ...row, id };
+      const creature = {
+        ...row,
+        id,
+        lineage_json: row.lineage_json || JSON.stringify([row.species_id]),
+      };
       state.player_creatures.push(creature);
       return creature;
     },

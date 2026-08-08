@@ -6,6 +6,7 @@ export const AppEvents = Object.freeze({
   RENAME_CREATURE: "party.rename",
   TRAIN_CREATURE: "training.train",
   EVOLVE_CREATURE: "evolution.evolve",
+  DEVOLVE_CREATURE: "evolution.devolve",
   EXPLORE_ZONE: "explore.start",
   BATTLE_ACTION: "battle.act",
   CATCH_CREATURE: "battle.catch",
