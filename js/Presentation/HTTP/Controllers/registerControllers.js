@@ -26,8 +26,9 @@ export function registerControllers(bus, services) {
   bus.on(AppEvents.DEVOLVE_CREATURE, (e) => evolutionService.devolve(e.payload));
   bus.on(AppEvents.EXPLORE_ZONE, (e) => exploreService.startEncounter(e.payload));
   bus.on(AppEvents.BATTLE_ACTION, (e) => battleService.act(e.payload));
+  bus.on(AppEvents.USE_BATTLE_ITEM, (e) => battleService.useItem(e.payload));
   bus.on(AppEvents.CLAIM_SCAN, (e) => scanService.claim(e.payload));
-  bus.on(AppEvents.BUY_STAT_BOOST, (e) => shopService.buy(e.payload));
+  bus.on(AppEvents.BUY_SHOP_ITEM, (e) => shopService.buy(e.payload));
 
   return bus;
 }

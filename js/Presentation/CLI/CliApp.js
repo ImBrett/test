@@ -22,15 +22,19 @@ async function main() {
   console.log("create →", res.data.player.name, "coins", res.data.player.resources.coins);
 
   res = await emit(AppEvents.SELECT_STARTER, { speciesId: 1 });
-  const creatureId = res.data.party[0].id;
   console.log("starter →", res.data.party[0].nickname, "Lv.", res.data.party[0].level);
 
-  const dust = res.data.shop.find((s) => s.code === "attack_dust");
-  res = await emit(AppEvents.BUY_STAT_BOOST, { itemId: dust.itemId, creatureId });
-  console.log("shop →", `+${res.data.purchase.gain} ${res.data.purchase.stat.name}`);
+  const salve = res.data.shop.find((s) => s.code === "field_salve");
+  res = await emit(AppEvents.BUY_SHOP_ITEM, { itemId: salve.itemId });
+  console.log("shop →", res.data.purchase.name, "×", res.data.purchase.quantity);
 
   res = await emit(AppEvents.EXPLORE_ZONE, { zoneCode: "cinderwaste" });
-  console.log("encounter →", res.data.battle.wild.nickname);
+  console.log(
+    "encounter →",
+    res.data.battle.wild.nickname,
+    "Lv.",
+    res.data.battle.wild.level
+  );
 
   let session = res.data.session;
   for (let i = 0; i < 20 && !session.over; i++) {
@@ -38,12 +42,17 @@ async function main() {
     if (!res.ok) break;
     session = res.data.session;
     if (res.data.turn?.result) {
-      console.log("win →", res.data.turn.result);
+      console.log("win →", {
+        coins: res.data.turn.result.coinGain,
+        xp: res.data.turn.result.xp,
+        scan: res.data.turn.result.scan,
+      });
     }
   }
 
   const st = services.getAppState();
   console.log("party level →", st.party[0].level, "xp", st.party[0].experience);
+  console.log("attack →", st.party[0].stats.find((s) => s.code === "attack")?.value);
   console.log("scans →", st.scans.length);
   console.log("OK");
 }

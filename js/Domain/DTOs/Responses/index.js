@@ -134,6 +134,8 @@ export function toShopListingDto(listing) {
   return {
     itemId: listing.item_id,
     price: listing.price,
+    category: listing.category || item.shop_category,
+    available: listing.available !== false,
     code: item.code,
     name: item.display_name,
     description: item.description,
@@ -207,6 +209,10 @@ export function toAppStateDto({
     inventory,
     scans,
     shop,
+    shopCategories: (catalog.shopCategories?.() || []).map((c) => ({
+      id: c.id,
+      label: c.label,
+    })),
     zones: catalog.zones.map(toZoneDto),
     starters: catalog.starterSpeciesIds().map((id) => {
       const s = catalog.speciesById(id);
@@ -239,6 +245,7 @@ export function toBattleSessionDto(session) {
       creatureId: session.you.id,
       nickname: session.you.nickname,
       species: session.you.species,
+      level: session.you.level,
       hp: session.youHp,
       hpMax: session.youMax,
       power: session.you.power,
@@ -246,6 +253,7 @@ export function toBattleSessionDto(session) {
     wild: {
       nickname: session.wild.nickname,
       species: session.wild.species,
+      level: session.wild.level,
       hp: session.wildHp,
       hpMax: session.wildMax,
       power: session.wild.power,

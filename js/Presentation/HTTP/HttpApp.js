@@ -9,6 +9,7 @@ export function bootHttpPresentation({ bus, services, catalog }) {
   let state = services.getAppState();
   let selectedStarter = null;
   let shopTargetId = null;
+  let shopCategory = "training";
   let evolveTargetId = null;
   let battleSession = null;
 
@@ -80,7 +81,6 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     if (!p) return;
     const sheet = $("#detail-sheet");
     const body = $("#detail-body");
-    const maxStat = Math.max(...p.stats.map((s) => s.value), 30);
     const xpLine =
       p.xpToNext > 0
         ? `Lv.${p.level} · ${p.experience}/${p.xpToNext} XP`
@@ -93,22 +93,8 @@ export function bootHttpPresentation({ bus, services, catalog }) {
         <p>${escapeHtml(p.species.name)} · ${escapeHtml(xpLine)}</p>
         <p>${escapeHtml(p.species.blurb)}</p>
       </div>
-      <div class="stat-list">
+      <div class="stat-list plain-stats">
         ${p.stats
-          .filter((s) => s.statId <= 5)
-          .map(
-            (s) => `
-          <div class="stat-row">
-            <div class="name" style="color:${s.color}">${s.name}</div>
-            <div class="bar"><span style="width:${Math.min(100, (s.value / maxStat) * 100)}%;background:${s.color}"></span></div>
-            <div class="val">${s.value}</div>
-          </div>`
-          )
-          .join("")}
-      </div>
-      <div class="stat-list secondary-stats">
-        ${p.stats
-          .filter((s) => s.statId > 5)
           .map(
             (s) => `
           <div class="stat-row compact">
@@ -124,15 +110,6 @@ export function bootHttpPresentation({ bus, services, catalog }) {
         <button class="btn btn-primary" id="btn-detail-evolve">Evolve</button>
         <button class="btn btn-secondary wide" id="btn-close-detail">Close</button>
       </div>`;
-    requestAnimationFrame(() => {
-      body.querySelectorAll(".bar > span").forEach((el) => {
-        const w = el.style.width;
-        el.style.width = "0";
-        requestAnimationFrame(() => {
-          el.style.width = w;
-        });
-      });
-    });
     $("#btn-set-active").onclick = async () => {
       await dispatch(AppEvents.SET_ACTIVE_CREATURE, { creatureId: id });
       toast(`${p.nickname} leads the party`);
@@ -193,6 +170,7 @@ export function bootHttpPresentation({ bus, services, catalog }) {
           <div class="fighter foe">
             <div class="finfo">
               <strong>${escapeHtml(b.wild.nickname)}</strong>
+              <small>Lv.${b.wild.level || 1}</small>
               <div class="hpbar foe"><span style="width:${foePct}%"></span></div>
             </div>
             ${avatarHtml(b.wild.species)}
@@ -201,6 +179,7 @@ export function bootHttpPresentation({ bus, services, catalog }) {
             ${avatarHtml(b.you.species)}
             <div class="finfo">
               <strong>${escapeHtml(b.you.nickname)}</strong>
+              <small>Lv.${b.you.level || 1}</small>
               <div class="hpbar"><span style="width:${youPct}%"></span></div>
             </div>
           </div>
@@ -210,6 +189,11 @@ export function bootHttpPresentation({ bus, services, catalog }) {
           <button class="btn btn-primary" data-act="strike">Strike<small>Solid hit</small></button>
           <button class="btn btn-secondary" data-act="guard">Guard<small>Brace</small></button>
           <button class="btn btn-secondary" data-act="burst">Burst<small>Risky</small></button>
+          ${
+            (state.inventory || []).some((i) => i.kind === "consumable")
+              ? `<button class="btn btn-secondary" id="btn-battle-item">Item<small>Bag</small></button>`
+              : ""
+          }
         </div>
         <div class="result-banner" id="result-banner"></div>
       </div>`;
@@ -217,6 +201,38 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     $("#battle-actions").querySelectorAll("[data-act]").forEach((btn) => {
       btn.onclick = () => doTurn(btn.dataset.act);
     });
+    $("#btn-battle-item")?.addEventListener("click", () => openBattleItems());
+  }
+
+  function openBattleItems() {
+    const consumables = (state.inventory || []).filter((i) => i.kind === "consumable");
+    if (!consumables.length) {
+      toast("No battle items");
+      return;
+    }
+    const pick = consumables
+      .map((i) => `${i.itemId}: ${i.name} ×${i.quantity}`)
+      .join("\n");
+    const raw = prompt(`Use which item?\n${pick}\n\nEnter item id:`);
+    if (raw == null) return;
+    const itemId = Number(raw);
+    if (!itemId) return;
+    useBattleItem(itemId);
+  }
+
+  async function useBattleItem(itemId) {
+    if (!battleSession || battleSession.over) return;
+    const res = await dispatch(AppEvents.USE_BATTLE_ITEM, {
+      battleSession,
+      itemId,
+    });
+    if (!res?.ok) return;
+    battleSession = res.data.session;
+    const youBar = $(".fighter.you .hpbar > span");
+    if (youBar) {
+      youBar.style.width = `${Math.max(0, (battleSession.youHp / battleSession.youMax) * 100)}%`;
+    }
+    (res.data.itemUse.log || []).forEach((l) => appendLog(l.text));
   }
 
   function appendLog(text) {
@@ -259,9 +275,13 @@ export function bootHttpPresentation({ bus, services, catalog }) {
             ? `+${xp.xpGain} XP · Level up! Lv.${xp.level}`
             : `+${xp.xpGain} XP`
           : "";
+        const gainsLine = xp?.statGains?.length
+          ? xp.statGains.map((g) => `${g.name} +${g.gain}`).join(" · ")
+          : "";
         banner.innerHTML = `
           <h3>Victory</h3>
           <p>+${turn.result.coinGain} coins${xpLine ? ` · ${escapeHtml(xpLine)}` : ""}</p>
+          ${gainsLine ? `<p class="level-gains">${escapeHtml(gainsLine)}</p>` : ""}
           ${scanLine ? `<p class="scan-toast">${escapeHtml(scanLine)}${scan.canClaim ? " · ready to claim" : ""}</p>` : ""}
           <div class="action-row">
             ${
@@ -350,59 +370,101 @@ export function bootHttpPresentation({ bus, services, catalog }) {
 
   function renderShop() {
     paintMeters(state);
+    const tabs = $("#shop-tabs");
     const pick = $("#shop-pick");
     const list = $("#shop-list");
-    if (!state.party.length) {
-      pick.innerHTML = "";
-      list.innerHTML = `<div class="empty">Claim a beast from Scan first.</div>`;
-      return;
-    }
-    if (!shopTargetId || !state.party.find((p) => p.id === shopTargetId)) {
-      shopTargetId = state.activeCreatureId || state.party[0].id;
-    }
-    pick.innerHTML = state.party
+    const categories = state.shopCategories?.length
+      ? state.shopCategories
+      : [
+          { id: "training", label: "Training" },
+          { id: "items", label: "Items" },
+          { id: "equipment", label: "Equipment" },
+        ];
+    if (!categories.some((c) => c.id === shopCategory)) shopCategory = categories[0].id;
+
+    tabs.innerHTML = categories
       .map(
-        (p) => `
-      <button class="train-chip ${p.id === shopTargetId ? "selected" : ""}" data-id="${p.id}">
-        ${avatarHtml(p.species)}
-        <span>${escapeHtml(p.nickname)} · Lv.${p.level}</span>
+        (c) => `
+      <button class="shop-tab ${c.id === shopCategory ? "active" : ""}" data-cat="${c.id}">
+        ${escapeHtml(c.label)}
       </button>`
       )
       .join("");
-    pick.querySelectorAll(".train-chip").forEach((btn) => {
+    tabs.querySelectorAll("[data-cat]").forEach((btn) => {
       btn.onclick = () => {
-        shopTargetId = Number(btn.dataset.id);
+        shopCategory = btn.dataset.cat;
         renderShop();
       };
     });
 
+    const needsTarget = shopCategory === "training";
+    if (needsTarget) {
+      if (!state.party.length) {
+        pick.innerHTML = "";
+        list.innerHTML = `<div class="empty">Claim a beast from Scan before buying training boosts.</div>`;
+        return;
+      }
+      if (!shopTargetId || !state.party.find((p) => p.id === shopTargetId)) {
+        shopTargetId = state.activeCreatureId || state.party[0].id;
+      }
+      pick.innerHTML = state.party
+        .map(
+          (p) => `
+        <button class="train-chip ${p.id === shopTargetId ? "selected" : ""}" data-id="${p.id}">
+          ${avatarHtml(p.species)}
+          <span>${escapeHtml(p.nickname)} · Lv.${p.level}</span>
+        </button>`
+        )
+        .join("");
+      pick.querySelectorAll(".train-chip").forEach((btn) => {
+        btn.onclick = () => {
+          shopTargetId = Number(btn.dataset.id);
+          renderShop();
+        };
+      });
+    } else {
+      pick.innerHTML = "";
+    }
+
     const pet = state.party.find((p) => p.id === shopTargetId);
     const coins = state.player?.resources?.coins ?? 0;
-    list.innerHTML = (state.shop || [])
+    const listings = (state.shop || []).filter((i) => i.category === shopCategory);
+    if (!listings.length) {
+      list.innerHTML = `<div class="empty">Nothing in this aisle yet.</div>`;
+      return;
+    }
+    list.innerHTML = listings
       .map((item) => {
-        const stat = pet.stats.find((s) => s.statId === item.statId);
-        const afford = coins >= item.price;
+        const stat = pet?.stats?.find((s) => s.statId === item.statId);
+        const locked = item.available === false;
+        const afford = !locked && coins >= item.price;
         return `
-        <button class="shop-item ${afford ? "" : "disabled"}" data-item="${item.itemId}" ${afford ? "" : "disabled"}>
+        <button class="shop-item ${afford ? "" : "disabled"}" data-item="${item.itemId}"
+          ${afford ? "" : "disabled"}>
           <div>
             <strong>${escapeHtml(item.name)}</strong>
-            <small>${escapeHtml(item.description)}${stat ? ` · now ${stat.value}` : ""}</small>
+            <small>${escapeHtml(item.description)}${
+              shopCategory === "training" && stat ? ` · now ${stat.value}` : ""
+            }${locked ? " · Coming soon" : ""}</small>
           </div>
-          <div class="shop-price">${item.price}🪙</div>
+          <div class="shop-price">${locked ? "—" : `${item.price}🪙`}</div>
         </button>`;
       })
       .join("");
     list.querySelectorAll("[data-item]").forEach((btn) => {
       btn.onclick = async () => {
-        const res = await dispatch(AppEvents.BUY_STAT_BOOST, {
+        const res = await dispatch(AppEvents.BUY_SHOP_ITEM, {
           itemId: Number(btn.dataset.item),
-          creatureId: shopTargetId,
+          creatureId: shopCategory === "training" ? shopTargetId : null,
         });
-        if (res?.ok) {
-          const p = res.data.purchase;
-          toast(`+${p.gain} ${p.stat.name}`);
-          renderShop();
+        if (!res?.ok) return;
+        const p = res.data.purchase;
+        if (p.kind === "training") {
+          toast(`+${p.gain} ${p.stat?.display_name || p.stat?.name || "stat"}`);
+        } else if (p.kind === "items") {
+          toast(`Bought ${p.name}`);
         }
+        renderShop();
       };
     });
   }

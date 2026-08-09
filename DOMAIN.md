@@ -71,10 +71,10 @@ Cross-context references use IDs only (no shared mutable state).
 
 ## Leveling & shop
 
-1. Creatures have **level 1–100** and XP from wild victories.
-2. Stats rise via **shop boosters** (+1 Dust / +2 Tonic / +3 Serum) purchased with coins.
-3. Evolution paths mix **level + stat** (and Apex Seal on final forms).
-4. No energy / training drills.
+1. Creatures (and wilds) have **level 1–100**. Wilds scale with your active creature.
+2. Wild victories grant XP; each level-up raises Attack/Speed/Defense/Mana by **+1** and Health by **+2**.
+3. Shop aisles: **Training** (expensive permanent boosts), **Items** (battle consumables), **Equipment** (stub).
+4. Evolution paths mix **level + stat** (and Apex Seal on final forms).
 
 
 ## Data-driven rule interpreters

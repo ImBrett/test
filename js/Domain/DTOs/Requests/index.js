@@ -143,20 +143,43 @@ export class ClaimScanRequest {
   }
 }
 
-export class BuyStatBoostRequest {
+export class BuyShopItemRequest {
   constructor(raw) {
     this.itemId = Number(raw?.itemId);
-    this.creatureId = Number(raw?.creatureId);
+    this.creatureId = raw?.creatureId != null ? Number(raw.creatureId) : null;
   }
   static from(raw) {
-    const dto = new BuyStatBoostRequest(raw);
+    const dto = new BuyShopItemRequest(raw);
     dto.validate();
     return dto;
   }
   validate() {
-    assertValid([
-      ...requireInt(this.itemId, "itemId", { min: 1 }),
-      ...requireInt(this.creatureId, "creatureId", { min: 1 }),
-    ]);
+    const errors = requireInt(this.itemId, "itemId", { min: 1 });
+    if (this.creatureId != null) {
+      errors.push(...requireInt(this.creatureId, "creatureId", { min: 1 }));
+    }
+    assertValid(errors);
+  }
+}
+
+/** @deprecated */
+export class BuyStatBoostRequest extends BuyShopItemRequest {}
+
+export class UseBattleItemRequest {
+  constructor(raw) {
+    this.battleSession = raw?.battleSession;
+    this.itemId = Number(raw?.itemId);
+  }
+  static from(raw) {
+    const dto = new UseBattleItemRequest(raw);
+    dto.validate();
+    return dto;
+  }
+  validate() {
+    const errors = requireInt(this.itemId, "itemId", { min: 1 });
+    if (!this.battleSession) {
+      errors.push({ field: "battleSession", message: "battleSession is required" });
+    }
+    assertValid(errors);
   }
 }

@@ -1,7 +1,14 @@
 import { ok, fail } from "../../Domain/DTOs/Result.js";
 import { appendEvent, enrichCreature } from "../../Domain/Rules/CreatureEnricher.js";
 import { combatPower, resolveMove } from "../../Domain/Rules/CombatRules.js";
-import { grantCreatureXp, xpForWildStage, xpToNextLevel } from "../../Domain/Rules/LevelRules.js";
+import {
+  grantCreatureXp,
+  xpForWild,
+  xpToNextLevel,
+  applyLevelUpStatGains,
+  scaleStatForLevel,
+  rollWildLevel,
+} from "../../Domain/Rules/LevelRules.js";
 import { applyScanProgress } from "./ScanActions.js";
 import { DomainEventTypes } from "../../Domain/Events/DomainEvents.js";
 
@@ -33,14 +40,18 @@ export function createStartEncounterAction({ catalog, uow, clock, random, evalua
       const table = catalog.encountersForZone(zone.id);
       const pick = weightedPick(table, random);
       const species = catalog.speciesById(pick.species_id);
+      const wildLevel = rollWildLevel(you.level || 1, species.stage, random);
       const variance =
         pick.stat_variance_min +
         random.next() * (pick.stat_variance_max - pick.stat_variance_min);
-      const stats = catalog.baseStatsForSpecies(species.id).map((bs) => ({
-        stat_id: bs.stat_id,
-        value: Math.max(1, Math.round(bs.value * variance)),
-        stat: catalog.statById(bs.stat_id),
-      }));
+      const stats = catalog.baseStatsForSpecies(species.id).map((bs) => {
+        const scaled = scaleStatForLevel(bs.stat_id, bs.value, wildLevel);
+        return {
+          stat_id: bs.stat_id,
+          value: Math.max(1, Math.round(scaled * variance)),
+          stat: catalog.statById(bs.stat_id),
+        };
+      });
       const wild = {
         id: -1,
         species_id: species.id,
@@ -49,7 +60,7 @@ export function createStartEncounterAction({ catalog, uow, clock, random, evalua
         stats,
         moves: catalog.movesForSpecies(species.id),
         power: stats.filter((s) => s.stat_id <= 5).reduce((a, s) => a + s.value, 0),
-        level: species.stage,
+        level: wildLevel,
         battles_won: 0,
       };
 
@@ -90,6 +101,7 @@ export function createStartEncounterAction({ catalog, uow, clock, random, evalua
 
       appendEvent(uow, player.id, "Battle", battle.id, "BattleStarted", {
         zone_id: zone.id,
+        wild_level: wildLevel,
       });
       uow.commit();
 
@@ -180,23 +192,41 @@ export function createResolveBattleTurnAction({ catalog, uow, clock, random, mov
       let result = null;
       const player = uow.getPlayer();
       if (foe.hp <= 0) {
-        const coinGain = 8 + Math.floor(battleSession.wild.power / 4);
+        const coinGain =
+          8 + Math.floor(battleSession.wild.power / 4) + Math.floor((battleSession.wild.level || 1) / 2);
         const resources = uow.getResources();
         resources.coins += coinGain;
         const creature = uow.getCreature(battleSession.you.id);
         let xp = null;
         if (creature) {
           creature.battles_won += 1;
-          xp = grantCreatureXp(creature, xpForWildStage(battleSession.wild.species.stage));
+          xp = grantCreatureXp(
+            creature,
+            xpForWild(battleSession.wild.species.stage, battleSession.wild.level || 1)
+          );
           if (xp.levelsGained > 0) {
+            const statGains = applyLevelUpStatGains({
+              catalog,
+              uow,
+              creatureId: creature.id,
+              levels: xp.levelsGained,
+            });
+            xp = { ...xp, statGains };
             appendEvent(
               uow,
               player.id,
               "PlayerCreature",
               creature.id,
               DomainEventTypes.CREATURE_LEVELED,
-              { level: xp.level, levelsGained: xp.levelsGained }
+              {
+                level: xp.level,
+                levelsGained: xp.levelsGained,
+                statGains,
+              }
             );
+            const gainText = statGains.map((g) => `${g.name} +${g.gain}`).join(" · ");
+            log.push({ text: `Level up! → Lv.${xp.level}`, reward: true });
+            if (gainText) log.push({ text: gainText, reward: true });
           }
         }
         if (random.next() < 0.08) uow.addInventory(1, 1); // Apex Seal
@@ -215,8 +245,7 @@ export function createResolveBattleTurnAction({ catalog, uow, clock, random, mov
         log.push({ text: `Victory! +${coinGain} coins.`, reward: true });
         if (xp) {
           let xpText = `+${xp.xpGain} XP`;
-          if (xp.levelsGained > 0) xpText += ` · Level up! → Lv.${xp.level}`;
-          else xpText += ` (${xp.experience}/${xpToNextLevel(xp.level)})`;
+          if (!xp.levelsGained) xpText += ` (${xp.experience}/${xpToNextLevel(xp.level)})`;
           log.push({ text: xpText, reward: true });
         }
         if (scan) {

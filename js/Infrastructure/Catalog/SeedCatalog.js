@@ -83,8 +83,10 @@ export function createSeedCatalog(clock) {
     drillForStat: (statId) => seed.trainingDrills.find((d) => d.stat_id === statId),
     shopListingByItemId: (itemId) =>
       seed.shopListings.find((l) => l.item_id === itemId),
-    shopListings: () =>
+    shopCategories: () => seed.SHOP_CATEGORIES,
+    shopListings: (category = null) =>
       seed.shopListings
+        .filter((l) => !category || l.category === category)
         .slice()
         .sort((a, b) => a.sort_order - b.sort_order)
         .map((l) => ({

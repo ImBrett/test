@@ -22,7 +22,10 @@ import {
   createResolveBattleTurnAction,
 } from "../../Application/Actions/BattleActions.js";
 import { createClaimScannedSpeciesAction } from "../../Application/Actions/ScanActions.js";
-import { createBuyStatBoostAction } from "../../Application/Actions/ShopActions.js";
+import {
+  createBuyShopItemAction,
+  createUseBattleItemAction,
+} from "../../Application/Actions/ShopActions.js";
 import { createSeedCatalog } from "../Catalog/SeedCatalog.js";
 import { createMemoryUnitOfWork } from "../Persistence/Memory/MemoryUnitOfWork.js";
 import { createSystemClock } from "../Clock/SystemClock.js";
@@ -71,7 +74,8 @@ export function createApplication(options = {}) {
       uow,
       obtainCreature,
     }),
-    buyStatBoost: createBuyStatBoostAction({ catalog, uow }),
+    buyShopItem: createBuyShopItemAction({ catalog, uow }),
+    useBattleItem: createUseBattleItemAction({ catalog, uow }),
   };
 
   const services = createApplicationServices({

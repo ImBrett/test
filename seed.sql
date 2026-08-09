@@ -61,10 +61,17 @@ INSERT INTO items (id, code, display_name, description, item_kind, effect_payloa
   (13, 'defense_serum', 'Defense Serum', 'Permanently raises Defense by 3.', 'stat_boost', '{"stat_id":4,"gain":3}', 3, 1, datetime('now'), datetime('now')),
   (14, 'mana_dust', 'Mana Dust', 'Permanently raises Mana by 1.', 'stat_boost', '{"stat_id":5,"gain":1}', 1, 1, datetime('now'), datetime('now')),
   (15, 'mana_tonic', 'Mana Tonic', 'Permanently raises Mana by 2.', 'stat_boost', '{"stat_id":5,"gain":2}', 2, 1, datetime('now'), datetime('now')),
-  (16, 'mana_serum', 'Mana Serum', 'Permanently raises Mana by 3.', 'stat_boost', '{"stat_id":5,"gain":3}', 3, 1, datetime('now'), datetime('now'));
+  (16, 'mana_serum', 'Mana Serum', 'Permanently raises Mana by 3.', 'stat_boost', '{"stat_id":5,"gain":3}', 3, 1, datetime('now'), datetime('now')),
+  (17, 'field_salve', 'Field Salve', 'In battle: restore 25% HP.', 'consumable', '{"battle":"heal_pct","heal_pct":0.25}', 1, 1, datetime('now'), datetime('now')),
+  (18, 'greater_salve', 'Greater Salve', 'In battle: restore 50% HP.', 'consumable', '{"battle":"heal_pct","heal_pct":0.5}', 2, 1, datetime('now'), datetime('now')),
+  (19, 'clarity_herb', 'Clarity Herb', 'In battle: clear attack/defense/speed debuffs.', 'consumable', '{"battle":"clear_debuffs"}', 1, 1, datetime('now'), datetime('now')),
+  (20, 'focus_draught', 'Focus Draught', 'In battle: clear debuffs and restore 15% HP.', 'consumable', '{"battle":"clear_debuffs","heal_pct":0.15}', 2, 1, datetime('now'), datetime('now')),
+  (21, 'ember_band', 'Ember Band', 'Equipment — coming soon.', 'equipment', '{"slot":"accessory"}', 2, 1, datetime('now'), datetime('now')),
+  (22, 'tide_charm', 'Tide Charm', 'Equipment — coming soon.', 'equipment', '{"slot":"accessory"}', 2, 1, datetime('now'), datetime('now')),
+  (23, 'aether_circlet', 'Aether Circlet', 'Equipment — coming soon.', 'equipment', '{"slot":"head"}', 3, 1, datetime('now'), datetime('now'));
 
 -- Shop price catalog (application reads seedData.shopListings; SQL mirror for docs)
--- 15 listings: 2@25, 3@55, 4@100, 5@25, 6@55, 7@100, 8@25, 9@55, 10@100, 11@25, 12@55, 13@100, 14@25, 15@55, 16@100
+-- 22 listings: 2@180, 3@420, 4@780, 5@180, 6@420, 7@780, 8@180, 9@420, 10@780, 11@180, 12@420, 13@780, 14@180, 15@420, 16@780, 17@40, 18@95, 19@55, 20@110, 21@200, 22@200, 23@450
 
 INSERT INTO species (id, code, display_name, blurb, glyph, element_id, stage, rarity_id, is_starter, base_scan_gain, created_at, updated_at) VALUES
   (1, 'emberkit', 'Emberkit', 'A hatchling spark of Ignis.', '🔥', 1, 1, 1, 1, 30, datetime('now'), datetime('now')),

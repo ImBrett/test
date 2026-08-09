@@ -9,6 +9,7 @@ export const AppEvents = Object.freeze({
   EXPLORE_ZONE: "explore.start",
   BATTLE_ACTION: "battle.act",
   CLAIM_SCAN: "scan.claim",
-  BUY_STAT_BOOST: "shop.buyStatBoost",
+  BUY_SHOP_ITEM: "shop.buy",
+  USE_BATTLE_ITEM: "battle.useItem",
   REFRESH_STATE: "app.refresh",
 });

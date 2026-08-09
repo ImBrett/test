@@ -14,7 +14,8 @@ import {
   ExploreZoneRequest,
   BattleActionRequest,
   ClaimScanRequest,
-  BuyStatBoostRequest,
+  BuyShopItemRequest,
+  UseBattleItemRequest,
 } from "../../Domain/DTOs/Requests/index.js";
 import {
   toCreatureDto,
@@ -54,7 +55,8 @@ export function createApplicationServices(deps) {
       startEncounter,
       resolveBattleTurn,
       claimScannedSpecies,
-      buyStatBoost,
+      buyShopItem,
+      useBattleItem,
     },
   } = deps;
 
@@ -179,6 +181,22 @@ export function createApplicationServices(deps) {
         state: getAppState(),
       });
     }),
+    useItem: guard((raw) => {
+      const req = UseBattleItemRequest.from(raw);
+      const result = useBattleItem.execute(req);
+      if (!result.ok) return result;
+      const session = {
+        ...req.battleSession,
+        youHp: result.data.youHp,
+        youCombat: result.data.youCombat || req.battleSession.youCombat,
+      };
+      return ok({
+        itemUse: result.data,
+        battle: toBattleSessionDto(session),
+        session,
+        state: getAppState(),
+      });
+    }),
   };
 
   const scanService = {
@@ -196,20 +214,11 @@ export function createApplicationServices(deps) {
 
   const shopService = {
     buy: guard((raw) => {
-      const req = BuyStatBoostRequest.from(raw);
-      const result = buyStatBoost.execute(req);
+      const req = BuyShopItemRequest.from(raw);
+      const result = buyShopItem.execute(req);
       if (!result.ok) return result;
       return ok({
-        purchase: {
-          gain: result.data.gain,
-          value: result.data.value,
-          price: result.data.price,
-          stat: {
-            id: result.data.stat.id,
-            name: result.data.stat.display_name,
-            color: result.data.stat.color,
-          },
-        },
+        purchase: result.data,
         state: getAppState(),
       });
     }),

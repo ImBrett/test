@@ -55,17 +55,18 @@ export const STAGE_NAMES = Object.freeze({
 });
 
 const STAT_BOOST_DEFS = [
-  [1, "attack", "Attack", "#E85D4C"],
-  [2, "health", "Health", "#3DBE8B"],
-  [3, "speed", "Speed", "#4DB8E8"],
-  [4, "defense", "Defense", "#C4A35A"],
-  [5, "mana", "Mana", "#5EC8C0"],
+  [1, "attack", "Attack"],
+  [2, "health", "Health"],
+  [3, "speed", "Speed"],
+  [4, "defense", "Defense"],
+  [5, "mana", "Mana"],
 ];
 
+/** Training boosts are intentionally expensive vs battle rewards. */
 const BOOST_TIERS = [
-  { suffix: "dust", label: "Dust", gain: 1, price: 25, rarity_id: 1 },
-  { suffix: "tonic", label: "Tonic", gain: 2, price: 55, rarity_id: 2 },
-  { suffix: "serum", label: "Serum", gain: 3, price: 100, rarity_id: 3 },
+  { suffix: "dust", label: "Dust", gain: 1, price: 180, rarity_id: 1 },
+  { suffix: "tonic", label: "Tonic", gain: 2, price: 420, rarity_id: 2 },
+  { suffix: "serum", label: "Serum", gain: 3, price: 780, rarity_id: 3 },
 ];
 
 let nextItemId = 1;
@@ -79,36 +80,145 @@ export const items = [
     effect_payload: {},
     rarity_id: 3,
     stackable: 1,
+    shop_category: null,
     shop_price: null,
   },
 ];
 
 export const shopListings = [];
 
+function addShopItem({
+  code,
+  display_name,
+  description,
+  item_kind,
+  effect_payload,
+  rarity_id,
+  shop_category,
+  price,
+  available = true,
+}) {
+  const id = nextItemId++;
+  items.push({
+    id,
+    code,
+    display_name,
+    description,
+    item_kind,
+    effect_payload,
+    rarity_id,
+    stackable: 1,
+    shop_category,
+    shop_price: price,
+    available,
+  });
+  shopListings.push({
+    id: shopListings.length + 1,
+    item_id: id,
+    price,
+    category: shop_category,
+    available,
+    sort_order: shopListings.length + 1,
+  });
+  return id;
+}
+
 for (const [stat_id, code, name] of STAT_BOOST_DEFS) {
   for (const tier of BOOST_TIERS) {
-    const id = nextItemId++;
-    items.push({
-      id,
+    addShopItem({
       code: `${code}_${tier.suffix}`,
       display_name: `${name} ${tier.label}`,
       description: `Permanently raises ${name} by ${tier.gain}.`,
       item_kind: "stat_boost",
       effect_payload: { stat_id, gain: tier.gain },
       rarity_id: tier.rarity_id,
-      stackable: 1,
-      shop_price: tier.price,
-    });
-    shopListings.push({
-      id: shopListings.length + 1,
-      item_id: id,
+      shop_category: "training",
       price: tier.price,
-      sort_order: shopListings.length + 1,
     });
   }
 }
 
+addShopItem({
+  code: "field_salve",
+  display_name: "Field Salve",
+  description: "In battle: restore 25% HP.",
+  item_kind: "consumable",
+  effect_payload: { battle: "heal_pct", heal_pct: 0.25 },
+  rarity_id: 1,
+  shop_category: "items",
+  price: 40,
+});
+addShopItem({
+  code: "greater_salve",
+  display_name: "Greater Salve",
+  description: "In battle: restore 50% HP.",
+  item_kind: "consumable",
+  effect_payload: { battle: "heal_pct", heal_pct: 0.5 },
+  rarity_id: 2,
+  shop_category: "items",
+  price: 95,
+});
+addShopItem({
+  code: "clarity_herb",
+  display_name: "Clarity Herb",
+  description: "In battle: clear attack/defense/speed debuffs.",
+  item_kind: "consumable",
+  effect_payload: { battle: "clear_debuffs" },
+  rarity_id: 1,
+  shop_category: "items",
+  price: 55,
+});
+addShopItem({
+  code: "focus_draught",
+  display_name: "Focus Draught",
+  description: "In battle: clear debuffs and restore 15% HP.",
+  item_kind: "consumable",
+  effect_payload: { battle: "clear_debuffs", heal_pct: 0.15 },
+  rarity_id: 2,
+  shop_category: "items",
+  price: 110,
+});
+
+addShopItem({
+  code: "ember_band",
+  display_name: "Ember Band",
+  description: "Equipment — coming soon.",
+  item_kind: "equipment",
+  effect_payload: { slot: "accessory" },
+  rarity_id: 2,
+  shop_category: "equipment",
+  price: 200,
+  available: false,
+});
+addShopItem({
+  code: "tide_charm",
+  display_name: "Tide Charm",
+  description: "Equipment — coming soon.",
+  item_kind: "equipment",
+  effect_payload: { slot: "accessory" },
+  rarity_id: 2,
+  shop_category: "equipment",
+  price: 200,
+  available: false,
+});
+addShopItem({
+  code: "aether_circlet",
+  display_name: "Aether Circlet",
+  description: "Equipment — coming soon.",
+  item_kind: "equipment",
+  effect_payload: { slot: "head" },
+  rarity_id: 3,
+  shop_category: "equipment",
+  price: 450,
+  available: false,
+});
+
 export const APEX_SEAL_ITEM_ID = 1;
+export const SHOP_CATEGORIES = Object.freeze([
+  { id: "training", label: "Training" },
+  { id: "items", label: "Items" },
+  { id: "equipment", label: "Equipment" },
+]);
 
 /** Scan fill % by stage: Hatchling 30 → Fledgling 20 → Mature 10 → Ascendant 5 → Apex 1 */
 const STAGE_SCAN_GAIN = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 1 };
