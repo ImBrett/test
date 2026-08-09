@@ -325,7 +325,15 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     const list = $("#scan-list");
     const scans = state.scans || [];
     if (!scans.length) {
-      list.innerHTML = `<div class="empty">Defeat wild beasts to fill scan data. At 100%, claim them here.</div>`;
+      list.innerHTML = `
+        <div class="empty">
+          <p>Defeat wild beasts to fill scan data. At 100%, claim them here.</p>
+          <button class="btn btn-primary wide" id="btn-scan-explore" style="margin-top:16px">Explore the wilds</button>
+        </div>`;
+      $("#btn-scan-explore").onclick = () => {
+        renderExplore();
+        showScreen("screen-explore");
+      };
       return;
     }
     list.innerHTML = scans
