@@ -268,7 +268,7 @@ CREATE TABLE player_creatures (
   player_id INTEGER NOT NULL,
   species_id INTEGER NOT NULL,
   nickname VARCHAR(32) NOT NULL,
-  level INTEGER NOT NULL DEFAULT 1 CHECK (level >= 1),
+  level INTEGER NOT NULL DEFAULT 1 CHECK (level BETWEEN 1 AND 100),
   experience INTEGER NOT NULL DEFAULT 0 CHECK (experience >= 0),
   battles_won INTEGER NOT NULL DEFAULT 0 CHECK (battles_won >= 0),
   -- Ordered species ids from Hatchling root → current (JSON array). Used for chain UI + devolve.

@@ -1,6 +1,6 @@
 import { evaluateEvolutionState } from "./EvolutionRequirements.js";
-import { Energy } from "../ValueObjects/Energy.js";
 import { raiseDomainEvent } from "../Events/DomainEvents.js";
+import { MAX_CREATURE_LEVEL, xpToNextLevel } from "./LevelRules.js";
 
 export function enrichCreature(catalog, uow, evaluators, creature) {
   const species = catalog.speciesById(creature.species_id);
@@ -13,6 +13,7 @@ export function enrichCreature(catalog, uow, evaluators, creature) {
     .sort((a, b) => a.slot - b.slot)
     .map((m) => ({ ...m, move: catalog.moveById(m.move_id) }));
   const evo = evaluateEvolutionState(evaluators, catalog, creature);
+  const level = creature.level || 1;
   return {
     ...creature,
     species,
@@ -20,14 +21,13 @@ export function enrichCreature(catalog, uow, evaluators, creature) {
     stats,
     moves,
     power: stats.filter((s) => s.stat_id <= 5).reduce((a, s) => a + s.value, 0),
+    xpToNext: level >= MAX_CREATURE_LEVEL ? 0 : xpToNextLevel(level),
     evo,
   };
 }
 
-export function regenEnergy(resources, clock) {
-  if (!resources) return;
-  Energy.fromResources(resources).regenerate(clock.epochMs()).applyTo(resources);
-}
+/** @deprecated Energy system removed. */
+export function regenEnergy() {}
 
 export function appendEvent(uow, playerId, aggregateType, aggregateId, eventType, payload = {}) {
   raiseDomainEvent(uow, {

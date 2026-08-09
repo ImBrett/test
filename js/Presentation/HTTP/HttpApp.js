@@ -8,7 +8,8 @@ import { $, $$, escapeHtml, avatarHtml, toast, showScreen, paintMeters } from ".
 export function bootHttpPresentation({ bus, services, catalog }) {
   let state = services.getAppState();
   let selectedStarter = null;
-  let trainTargetId = null;
+  let shopTargetId = null;
+  let evolveTargetId = null;
   let battleSession = null;
 
   async function dispatch(eventName, payload = {}) {
@@ -31,6 +32,13 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     $("#nav").classList.remove("hidden");
   }
 
+  function openEvolve(creatureId) {
+    evolveTargetId = creatureId;
+    renderEvolve();
+    showScreen("screen-evolve");
+    $("#nav").classList.add("hidden");
+  }
+
   function renderParty() {
     paintMeters(state);
     const grid = $("#party-grid");
@@ -41,18 +49,29 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     grid.innerHTML = state.party
       .map(
         (p) => `
-      <button class="pet-card ${p.id === state.activeCreatureId ? "active" : ""}" data-id="${p.id}">
-        ${avatarHtml(p.species)}
-        <div class="pet-meta">
-          <strong>${escapeHtml(p.nickname)}</strong>
-          <small>${escapeHtml(p.species.name)} · ${escapeHtml(p.species.stageName || `Stage ${p.species.stage}`)}</small>
-        </div>
-        <div class="power-chip">${p.power}</div>
-      </button>`
+      <div class="pet-card ${p.id === state.activeCreatureId ? "active" : ""}">
+        <button class="pet-card-main" data-detail="${p.id}">
+          ${avatarHtml(p.species)}
+          <div class="pet-meta">
+            <strong>${escapeHtml(p.nickname)}</strong>
+            <small>${escapeHtml(p.species.name)} · ${escapeHtml(p.species.stageName || `Stage ${p.species.stage}`)}</small>
+          </div>
+          <div class="power-chip">Lv.${p.level}</div>
+        </button>
+        <button class="btn btn-secondary btn-sm pet-evolve-btn" data-evolve-open="${p.id}">
+          Evolve
+        </button>
+      </div>`
       )
       .join("");
-    grid.querySelectorAll(".pet-card").forEach((btn) => {
-      btn.onclick = () => openDetail(Number(btn.dataset.id));
+    grid.querySelectorAll("[data-detail]").forEach((btn) => {
+      btn.onclick = () => openDetail(Number(btn.dataset.detail));
+    });
+    grid.querySelectorAll("[data-evolve-open]").forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        openEvolve(Number(btn.dataset.evolveOpen));
+      };
     });
   }
 
@@ -62,12 +81,17 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     const sheet = $("#detail-sheet");
     const body = $("#detail-body");
     const maxStat = Math.max(...p.stats.map((s) => s.value), 30);
+    const xpLine =
+      p.xpToNext > 0
+        ? `Lv.${p.level} · ${p.experience}/${p.xpToNext} XP`
+        : `Lv.${p.level} · MAX`;
     body.innerHTML = `
       <div class="sheet-handle"></div>
       <div class="detail-hero">
         ${avatarHtml(p.species)}
         <h2>${escapeHtml(p.nickname)}</h2>
-        <p>${escapeHtml(p.species.name)} · ${escapeHtml(p.species.blurb)}</p>
+        <p>${escapeHtml(p.species.name)} · ${escapeHtml(xpLine)}</p>
+        <p>${escapeHtml(p.species.blurb)}</p>
       </div>
       <div class="stat-list">
         ${p.stats
@@ -97,7 +121,8 @@ export function bootHttpPresentation({ bus, services, catalog }) {
       <div class="action-row">
         <button class="btn btn-secondary" id="btn-set-active">Set Active</button>
         <button class="btn btn-secondary" id="btn-rename">Rename</button>
-        <button class="btn btn-primary wide" id="btn-close-detail">Close</button>
+        <button class="btn btn-primary" id="btn-detail-evolve">Evolve</button>
+        <button class="btn btn-secondary wide" id="btn-close-detail">Close</button>
       </div>`;
     requestAnimationFrame(() => {
       body.querySelectorAll(".bar > span").forEach((el) => {
@@ -122,64 +147,12 @@ export function bootHttpPresentation({ bus, services, catalog }) {
         renderParty();
       }
     };
+    $("#btn-detail-evolve").onclick = () => {
+      sheet.classList.remove("open");
+      openEvolve(id);
+    };
     $("#btn-close-detail").onclick = () => sheet.classList.remove("open");
     sheet.classList.add("open");
-  }
-
-  function renderTrain() {
-    paintMeters(state);
-    const pick = $("#train-pick");
-    if (!state.party.length) {
-      pick.innerHTML = "";
-      $("#train-stats").innerHTML = `<div class="empty">Claim a beast from Scan first.</div>`;
-      return;
-    }
-    if (!trainTargetId || !state.party.find((p) => p.id === trainTargetId)) {
-      trainTargetId = state.activeCreatureId || state.party[0].id;
-    }
-    pick.innerHTML = state.party
-      .map(
-        (p) => `
-      <button class="train-chip ${p.id === trainTargetId ? "selected" : ""}" data-id="${p.id}">
-        ${avatarHtml(p.species)}
-        <span>${escapeHtml(p.nickname)}</span>
-      </button>`
-      )
-      .join("");
-    pick.querySelectorAll(".train-chip").forEach((btn) => {
-      btn.onclick = () => {
-        trainTargetId = Number(btn.dataset.id);
-        renderTrain();
-      };
-    });
-    const pet = state.party.find((p) => p.id === trainTargetId);
-    $("#train-stats").innerHTML = pet.stats
-      .filter((s) => s.statId <= 5)
-      .map(
-        (s) => `
-      <button class="train-btn" data-stat="${s.statId}">
-        <div class="swatch" style="background:${s.color}"></div>
-        <div>
-          <strong>${s.name}</strong>
-          <small>${s.description} · now ${s.value}</small>
-        </div>
-        <div class="power-chip">+1⚡</div>
-      </button>`
-      )
-      .join("");
-    $("#train-stats").querySelectorAll(".train-btn").forEach((btn) => {
-      btn.onclick = async () => {
-        const res = await dispatch(AppEvents.TRAIN_CREATURE, {
-          creatureId: trainTargetId,
-          statId: Number(btn.dataset.stat),
-        });
-        if (res?.ok) {
-          const t = res.data.train;
-          toast(`+${t.gain} ${t.stat.name}${t.critical ? "!" : ""}`);
-          renderTrain();
-        }
-      };
-    });
   }
 
   function renderExplore() {
@@ -190,7 +163,7 @@ export function bootHttpPresentation({ bus, services, catalog }) {
       <button class="zone-card" data-zone="${z.code}">
         <h3>${escapeHtml(z.name)}</h3>
         <p>${escapeHtml(z.vibe)}</p>
-        <div class="cost">Explore · ${z.energyCost} energy</div>
+        <div class="cost">Explore</div>
       </button>`
       )
       .join("");
@@ -277,14 +250,18 @@ export function bootHttpPresentation({ bus, services, catalog }) {
       banner.classList.add("show");
       if (turn.result.outcome === "win") {
         const scan = turn.result.scan;
+        const xp = turn.result.xp;
         const scanLine = scan
-          ? `Scan ${scan.speciesName} +${scan.gain}% → ${scan.scanLevel}%`
+          ? `Scan ${scan.speciesName}: ${scan.previousLevel}% → ${scan.scanLevel}%`
+          : "";
+        const xpLine = xp
+          ? xp.levelsGained > 0
+            ? `+${xp.xpGain} XP · Level up! Lv.${xp.level}`
+            : `+${xp.xpGain} XP`
           : "";
         banner.innerHTML = `
           <h3>Victory</h3>
-          <p>+${turn.result.coinGain} coins${
-            turn.result.trainBoost ? ` · +1 ${turn.result.trainBoost.stat.display_name}` : ""
-          }</p>
+          <p>+${turn.result.coinGain} coins${xpLine ? ` · ${escapeHtml(xpLine)}` : ""}</p>
           ${scanLine ? `<p class="scan-toast">${escapeHtml(scanLine)}${scan.canClaim ? " · ready to claim" : ""}</p>` : ""}
           <div class="action-row">
             ${
@@ -298,15 +275,13 @@ export function bootHttpPresentation({ bus, services, catalog }) {
           battleSession = null;
           renderScan();
           showScreen("screen-scan");
-          $$(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === "scan"));
-          $("#nav").classList.remove("hidden");
         });
         $("#btn-leave").onclick = leaveBattle;
       } else {
         banner.classList.add("lose");
         banner.innerHTML = `
           <h3>Defeated</h3>
-          <p>Retreat, train harder, try again.</p>
+          <p>Shop for boosts, then try again.</p>
           <button class="btn btn-secondary wide" id="btn-leave">Return</button>`;
         $("#btn-leave").onclick = leaveBattle;
       }
@@ -317,7 +292,6 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     battleSession = null;
     renderExplore();
     showScreen("screen-explore");
-    $("#nav").classList.remove("hidden");
   }
 
   function renderScan() {
@@ -374,6 +348,65 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     });
   }
 
+  function renderShop() {
+    paintMeters(state);
+    const pick = $("#shop-pick");
+    const list = $("#shop-list");
+    if (!state.party.length) {
+      pick.innerHTML = "";
+      list.innerHTML = `<div class="empty">Claim a beast from Scan first.</div>`;
+      return;
+    }
+    if (!shopTargetId || !state.party.find((p) => p.id === shopTargetId)) {
+      shopTargetId = state.activeCreatureId || state.party[0].id;
+    }
+    pick.innerHTML = state.party
+      .map(
+        (p) => `
+      <button class="train-chip ${p.id === shopTargetId ? "selected" : ""}" data-id="${p.id}">
+        ${avatarHtml(p.species)}
+        <span>${escapeHtml(p.nickname)} · Lv.${p.level}</span>
+      </button>`
+      )
+      .join("");
+    pick.querySelectorAll(".train-chip").forEach((btn) => {
+      btn.onclick = () => {
+        shopTargetId = Number(btn.dataset.id);
+        renderShop();
+      };
+    });
+
+    const pet = state.party.find((p) => p.id === shopTargetId);
+    const coins = state.player?.resources?.coins ?? 0;
+    list.innerHTML = (state.shop || [])
+      .map((item) => {
+        const stat = pet.stats.find((s) => s.statId === item.statId);
+        const afford = coins >= item.price;
+        return `
+        <button class="shop-item ${afford ? "" : "disabled"}" data-item="${item.itemId}" ${afford ? "" : "disabled"}>
+          <div>
+            <strong>${escapeHtml(item.name)}</strong>
+            <small>${escapeHtml(item.description)}${stat ? ` · now ${stat.value}` : ""}</small>
+          </div>
+          <div class="shop-price">${item.price}🪙</div>
+        </button>`;
+      })
+      .join("");
+    list.querySelectorAll("[data-item]").forEach((btn) => {
+      btn.onclick = async () => {
+        const res = await dispatch(AppEvents.BUY_STAT_BOOST, {
+          itemId: Number(btn.dataset.item),
+          creatureId: shopTargetId,
+        });
+        if (res?.ok) {
+          const p = res.data.purchase;
+          toast(`+${p.gain} ${p.stat.name}`);
+          renderShop();
+        }
+      };
+    });
+  }
+
   function renderTreeNode(node, depth = 0) {
     if (!node) return "";
     const cls = [
@@ -406,75 +439,73 @@ export function bootHttpPresentation({ bus, services, catalog }) {
   function renderEvolve() {
     paintMeters(state);
     const list = $("#evo-list");
-    if (!state.party.length) {
+    const p = state.party.find((c) => c.id === evolveTargetId) || state.party[0];
+    if (!p) {
       list.innerHTML = `<div class="empty">No beasts to evolve yet.</div>`;
       return;
     }
-
-    list.innerHTML = state.party
-      .map((p) => {
-        const evo = p.evolution;
-        const lineageTrail = (evo.lineageSpecies || [])
-          .map((s) => `${s.glyph} ${s.name}`)
-          .join(" → ");
-        const branchesHtml = (evo.branches || [])
-          .map((b) => {
-            const reqs = (b.requirements || [])
-              .map(
-                (r) => `
-                <div class="req ${r.met ? "met" : ""}">
-                  <span>${escapeHtml(r.label)}</span>
-                  <span>${r.have} / ${r.needed}</span>
-                </div>`
-              )
-              .join("");
-            return `
-              <div class="branch-card ${b.ready ? "ready" : ""}">
-                <div class="branch-head">
-                  ${avatarHtml(b.next)}
-                  <div>
-                    <strong>${escapeHtml(b.next.name)}</strong>
-                    <small>${escapeHtml(b.label || "")} · ${escapeHtml(b.next.stageName)}</small>
-                  </div>
-                </div>
-                <div class="req-list">${reqs}</div>
-                <button class="btn ${b.ready ? "btn-primary" : "btn-secondary"} wide"
-                  data-evolve="${p.id}" data-path="${b.pathId}" ${b.ready ? "" : "disabled"}>
-                  ${b.ready ? `Evolve → ${escapeHtml(b.next.name)}` : "Keep training"}
-                </button>
-              </div>`;
-          })
+    evolveTargetId = p.id;
+    const evo = p.evolution;
+    const lineageTrail = (evo.lineageSpecies || [])
+      .map((s) => `${s.glyph} ${s.name}`)
+      .join(" → ");
+    const branchesHtml = (evo.branches || [])
+      .map((b) => {
+        const reqs = (b.requirements || [])
+          .map(
+            (r) => `
+            <div class="req ${r.met ? "met" : ""}">
+              <span>${escapeHtml(r.label)}</span>
+              <span>${r.have} / ${r.needed}</span>
+            </div>`
+          )
           .join("");
-
         return `
-          <div class="evo-card ${evo.ready ? "ready" : ""}">
-            <div class="evo-card-head">
-              ${avatarHtml(p.species)}
+          <div class="branch-card ${b.ready ? "ready" : ""}">
+            <div class="branch-head">
+              ${avatarHtml(b.next)}
               <div>
-                <strong>${escapeHtml(p.nickname)}</strong>
-                <small>${escapeHtml(p.species.stageName)} · ${escapeHtml(p.species.name)}</small>
+                <strong>${escapeHtml(b.next.name)}</strong>
+                <small>${escapeHtml(b.label || "")} · ${escapeHtml(b.next.stageName)}</small>
               </div>
             </div>
-            <div class="lineage-trail">${escapeHtml(lineageTrail || p.species.name)}</div>
-            <div class="evo-tree" aria-label="Evolution chain">
-              ${renderTreeNode(evo.tree)}
-            </div>
-            ${
-              evo.branches?.length
-                ? `<h3 class="evo-subhead">Branches</h3><div class="branch-grid">${branchesHtml}</div>`
-                : `<p class="empty" style="padding:12px 0">Apex form — no further evolutions.</p>`
-            }
-            ${
-              evo.canDevolve
-                ? `<button class="btn btn-danger wide" data-devolve="${p.id}" style="margin-top:12px">
-                    Devolve → ${escapeHtml(evo.ancestor.name)}
-                    <small style="display:block;font-weight:500;opacity:.8">Resets stats to ${escapeHtml(evo.ancestor.name)} base</small>
-                  </button>`
-                : ""
-            }
+            <div class="req-list">${reqs}</div>
+            <button class="btn ${b.ready ? "btn-primary" : "btn-secondary"} wide"
+              data-evolve="${p.id}" data-path="${b.pathId}" ${b.ready ? "" : "disabled"}>
+              ${b.ready ? `Evolve → ${escapeHtml(b.next.name)}` : "Requirements unmet"}
+            </button>
           </div>`;
       })
       .join("");
+
+    list.innerHTML = `
+      <div class="evo-card ${evo.ready ? "ready" : ""}">
+        <div class="evo-card-head">
+          ${avatarHtml(p.species)}
+          <div>
+            <strong>${escapeHtml(p.nickname)}</strong>
+            <small>Lv.${p.level} · ${escapeHtml(p.species.stageName)} · ${escapeHtml(p.species.name)}</small>
+          </div>
+        </div>
+        <div class="lineage-trail">${escapeHtml(lineageTrail || p.species.name)}</div>
+        ${
+          evo.branches?.length
+            ? `<h3 class="evo-subhead">Branches</h3><div class="branch-grid">${branchesHtml}</div>`
+            : `<p class="empty" style="padding:12px 0">Apex form — no further evolutions.</p>`
+        }
+        ${
+          evo.canDevolve
+            ? `<button class="btn btn-danger wide" data-devolve="${p.id}" style="margin-top:12px">
+                Devolve → ${escapeHtml(evo.ancestor.name)}
+                <small style="display:block;font-weight:500;opacity:.8">Resets stats to ${escapeHtml(evo.ancestor.name)} base</small>
+              </button>`
+            : ""
+        }
+        <h3 class="evo-subhead">Evolution tree</h3>
+        <div class="evo-tree" aria-label="Evolution chain">
+          ${renderTreeNode(evo.tree)}
+        </div>
+      </div>`;
 
     list.querySelectorAll("[data-evolve]").forEach((btn) => {
       btn.onclick = async () => {
@@ -555,19 +586,17 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     toast("Your journey begins");
     enterHub();
   });
-  $("#btn-rest").addEventListener("click", async () => {
-    await dispatch(AppEvents.REST_PLAYER);
-    toast("Energy restored");
+  $("#btn-evo-back")?.addEventListener("click", () => {
+    renderParty();
+    showScreen("screen-party");
   });
   $$(".nav-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const tab = btn.dataset.tab;
       if (tab === "party") renderParty();
-      if (tab === "train") renderTrain();
       if (tab === "explore") renderExplore();
       if (tab === "scan") renderScan();
-      if (tab === "evolve") renderEvolve();
-      $$(".nav-btn").forEach((b) => b.classList.toggle("active", b === btn));
+      if (tab === "shop") renderShop();
       showScreen(`screen-${tab}`);
     });
   });
@@ -575,7 +604,6 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     if (e.target.id === "detail-sheet") e.target.classList.remove("open");
   });
 
-  // title orb
   const glyphs = catalog.species.filter((p) => p.stage === 5);
   let gi = 0;
   setInterval(() => {
@@ -584,13 +612,9 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     $("#title-orb").style.setProperty("--orb-hue", glyphs[gi].hue);
   }, 3200);
 
-  // boot
   state = services.getAppState();
   $("#btn-continue").classList.toggle("hidden", !services.playerService.hasSave());
   showScreen("screen-title");
   $("#nav").classList.add("hidden");
   paintMeters(state);
-  setInterval(async () => {
-    await dispatch(AppEvents.REGEN_ENERGY);
-  }, 15000);
 }

@@ -9,7 +9,6 @@ import { createRequirementEvaluators } from "../../Domain/Rules/EvolutionRequire
 import { createMoveResolvers } from "../../Domain/Rules/CombatRules.js";
 import { createCreatePlayerAction } from "../../Application/Actions/CreatePlayerAction.js";
 import { createObtainCreatureAction } from "../../Application/Actions/ObtainCreatureAction.js";
-import { createTrainCreatureAction } from "../../Application/Actions/TrainCreatureAction.js";
 import {
   createSetActiveCreatureAction,
   createRenameCreatureAction,
@@ -23,10 +22,7 @@ import {
   createResolveBattleTurnAction,
 } from "../../Application/Actions/BattleActions.js";
 import { createClaimScannedSpeciesAction } from "../../Application/Actions/ScanActions.js";
-import {
-  createRestPlayerAction,
-  createRegenerateEnergyAction,
-} from "../../Application/Actions/RestPlayerAction.js";
+import { createBuyStatBoostAction } from "../../Application/Actions/ShopActions.js";
 import { createSeedCatalog } from "../Catalog/SeedCatalog.js";
 import { createMemoryUnitOfWork } from "../Persistence/Memory/MemoryUnitOfWork.js";
 import { createSystemClock } from "../Clock/SystemClock.js";
@@ -35,11 +31,6 @@ import { registerControllers } from "../../Presentation/HTTP/Controllers/registe
 
 /**
  * @param {object} [options]
- * @param {Storage} [options.storage]
- * @param {import('../../Domain/Ports/UnitOfWorkPort.js').UnitOfWorkPort} [options.uow]
- * @param {import('../../Domain/Ports/CatalogPort.js').CatalogPort} [options.catalog]
- * @param {object} [options.clock]
- * @param {object} [options.random]
  */
 export function createApplication(options = {}) {
   const clock = options.clock || createSystemClock();
@@ -57,7 +48,6 @@ export function createApplication(options = {}) {
   const actions = {
     createPlayer: createCreatePlayerAction({ catalog, uow, clock }),
     obtainCreature,
-    trainCreature: createTrainCreatureAction({ catalog, uow, clock, random }),
     setActiveCreature: createSetActiveCreatureAction({ uow }),
     renameCreature: createRenameCreatureAction({ catalog, uow }),
     evolveCreature: createEvolveCreatureAction({ catalog, uow, evaluators }),
@@ -81,8 +71,7 @@ export function createApplication(options = {}) {
       uow,
       obtainCreature,
     }),
-    restPlayer: createRestPlayerAction({ uow, clock }),
-    regenerateEnergy: createRegenerateEnergyAction({ uow, clock }),
+    buyStatBoost: createBuyStatBoostAction({ catalog, uow }),
   };
 
   const services = createApplicationServices({

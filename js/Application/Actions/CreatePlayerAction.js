@@ -3,7 +3,7 @@ import { appendEvent } from "../../Domain/Rules/CreatureEnricher.js";
 import { createPlayerModel } from "../../Domain/Models/index.js";
 import { DomainEventTypes } from "../../Domain/Events/DomainEvents.js";
 
-/** Action: CreatePlayer — boots traveler aggregate + starter inventory/party slots. */
+/** Action: CreatePlayer — boots traveler aggregate + party slots. */
 export function createCreatePlayerAction({ catalog, uow, clock }) {
   return {
     name: "CreatePlayer",
@@ -19,16 +19,11 @@ export function createCreatePlayerAction({ catalog, uow, clock }) {
       );
       uow.insertResources({
         player_id: player.id,
-        energy: 20,
-        energy_max: 20,
-        coins: 0,
-        energy_regen_seconds: 45,
+        energy: 0,
+        energy_max: 0,
+        coins: 40,
+        energy_regen_seconds: 0,
         last_energy_at: ts,
-      });
-      uow.insertInventoryRow({
-        player_id: player.id,
-        item_id: 2, // rations
-        quantity: 3,
       });
       for (let slot = 1; slot <= 6; slot++) {
         uow.insertPartySlot({

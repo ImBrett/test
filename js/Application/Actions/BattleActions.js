@@ -1,7 +1,9 @@
 import { ok, fail } from "../../Domain/DTOs/Result.js";
-import { appendEvent, enrichCreature, regenEnergy } from "../../Domain/Rules/CreatureEnricher.js";
+import { appendEvent, enrichCreature } from "../../Domain/Rules/CreatureEnricher.js";
 import { combatPower, resolveMove } from "../../Domain/Rules/CombatRules.js";
+import { grantCreatureXp, xpForWildStage, xpToNextLevel } from "../../Domain/Rules/LevelRules.js";
 import { applyScanProgress } from "./ScanActions.js";
+import { DomainEventTypes } from "../../Domain/Events/DomainEvents.js";
 
 function weightedPick(encounters, random) {
   const total = encounters.reduce((a, e) => a + e.weight, 0);
@@ -13,7 +15,7 @@ function weightedPick(encounters, random) {
   return encounters[encounters.length - 1];
 }
 
-/** Action: StartEncounter — spend energy, roll zone_encounters, open Battle aggregate. */
+/** Action: StartEncounter — roll zone_encounters, open Battle aggregate. */
 export function createStartEncounterAction({ catalog, uow, clock, random, evaluators }) {
   return {
     name: "StartEncounter",
@@ -22,11 +24,6 @@ export function createStartEncounterAction({ catalog, uow, clock, random, evalua
       if (!player) return fail("NO_PLAYER", "Create a player first");
       const zone = catalog.zoneByCode(zoneCode);
       if (!zone) return fail("UNKNOWN_ZONE", "Zone not found");
-
-      const resources = uow.getResources();
-      regenEnergy(resources, clock);
-      if (resources.energy < zone.energy_cost) return fail("ENERGY", "Not enough energy");
-      resources.energy -= zone.energy_cost;
 
       const activeRow =
         uow.listCreatures().find((c) => c.is_active) || uow.listCreatures()[0];
@@ -51,7 +48,7 @@ export function createStartEncounterAction({ catalog, uow, clock, random, evalua
         species,
         stats,
         moves: catalog.movesForSpecies(species.id),
-        power: stats.reduce((a, s) => a + s.value, 0),
+        power: stats.filter((s) => s.stat_id <= 5).reduce((a, s) => a + s.value, 0),
         level: species.stage,
         battles_won: 0,
       };
@@ -187,36 +184,44 @@ export function createResolveBattleTurnAction({ catalog, uow, clock, random, mov
         const resources = uow.getResources();
         resources.coins += coinGain;
         const creature = uow.getCreature(battleSession.you.id);
+        let xp = null;
         if (creature) {
           creature.battles_won += 1;
-          creature.experience += 10;
+          xp = grantCreatureXp(creature, xpForWildStage(battleSession.wild.species.stage));
+          if (xp.levelsGained > 0) {
+            appendEvent(
+              uow,
+              player.id,
+              "PlayerCreature",
+              creature.id,
+              DomainEventTypes.CREATURE_LEVELED,
+              { level: xp.level, levelsGained: xp.levelsGained }
+            );
+          }
         }
-        const rows = uow.statsForCreature(battleSession.you.id);
-        let trainBoost = null;
-        if (rows.length) {
-          const trainable = rows.filter((r) => r.stat_id <= 5);
-          const pick = (trainable.length ? trainable : rows)[random.intBelow((trainable.length || rows.length))];
-          pick.value += 1;
-          trainBoost = { stat: catalog.statById(pick.stat_id), value: pick.value };
-        }
-        if (random.next() < 0.25) uow.addInventory(2, 1); // ration
         if (random.next() < 0.08) uow.addInventory(1, 1); // Apex Seal
 
         const scan = applyScanProgress({
           catalog,
           uow,
-          random,
           speciesId: battleSession.wild.species_id,
         });
 
         appendEvent(uow, player.id, "Battle", battleSession.battleId, "BattleWon", {
           coinGain,
           scan,
+          xp,
         });
         log.push({ text: `Victory! +${coinGain} coins.`, reward: true });
+        if (xp) {
+          let xpText = `+${xp.xpGain} XP`;
+          if (xp.levelsGained > 0) xpText += ` · Level up! → Lv.${xp.level}`;
+          else xpText += ` (${xp.experience}/${xpToNextLevel(xp.level)})`;
+          log.push({ text: xpText, reward: true });
+        }
         if (scan) {
           log.push({
-            text: `Scan ${scan.speciesName}: +${scan.gain}% → ${scan.scanLevel}%${
+            text: `Scan ${scan.speciesName}: ${scan.previousLevel}% → ${scan.scanLevel}%${
               scan.canClaim ? " — ready to claim!" : ""
             }`,
             reward: true,
@@ -225,7 +230,7 @@ export function createResolveBattleTurnAction({ catalog, uow, clock, random, mov
         result = {
           outcome: "win",
           coinGain,
-          trainBoost,
+          xp,
           scan,
         };
       } else if (you.hp <= 0) {

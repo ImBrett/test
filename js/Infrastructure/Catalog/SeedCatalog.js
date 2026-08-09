@@ -81,6 +81,16 @@ export function createSeedCatalog(clock) {
     requirementsForPath: (pathId) =>
       seed.evolutionRequirements.filter((r) => r.evolution_path_id === pathId),
     drillForStat: (statId) => seed.trainingDrills.find((d) => d.stat_id === statId),
+    shopListingByItemId: (itemId) =>
+      seed.shopListings.find((l) => l.item_id === itemId),
+    shopListings: () =>
+      seed.shopListings
+        .slice()
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((l) => ({
+          ...l,
+          item: itemById(l.item_id),
+        })),
     encountersForZone: (zoneId) =>
       seed.zoneEncounters.filter((e) => e.zone_id === zoneId),
     moveByCodeOrKind: (action) =>

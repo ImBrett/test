@@ -54,99 +54,153 @@ export const STAGE_NAMES = Object.freeze({
   5: "Apex",
 });
 
-export const items = [
-  { id: 1, code: "apex_seal", display_name: "Apex Seal", description: "Required for Apex evolutions.", item_kind: "evolution", effect_payload: {}, rarity_id: 3, stackable: 1 },
-  { id: 2, code: "ration", display_name: "Ration", description: "Restores 10 energy.", item_kind: "consumable", effect_payload: { energy: 10 }, rarity_id: 1, stackable: 1 },
-  { id: 3, code: "coin_pouch", display_name: "Coin Pouch", description: "Grants 50 coins when opened.", item_kind: "currency_pack", effect_payload: { coins: 50 }, rarity_id: 1, stackable: 1 },
+const STAT_BOOST_DEFS = [
+  [1, "attack", "Attack", "#E85D4C"],
+  [2, "health", "Health", "#3DBE8B"],
+  [3, "speed", "Speed", "#4DB8E8"],
+  [4, "defense", "Defense", "#C4A35A"],
+  [5, "mana", "Mana", "#5EC8C0"],
 ];
 
+const BOOST_TIERS = [
+  { suffix: "dust", label: "Dust", gain: 1, price: 25, rarity_id: 1 },
+  { suffix: "tonic", label: "Tonic", gain: 2, price: 55, rarity_id: 2 },
+  { suffix: "serum", label: "Serum", gain: 3, price: 100, rarity_id: 3 },
+];
+
+let nextItemId = 1;
+export const items = [
+  {
+    id: nextItemId++,
+    code: "apex_seal",
+    display_name: "Apex Seal",
+    description: "Required for Apex evolutions.",
+    item_kind: "evolution",
+    effect_payload: {},
+    rarity_id: 3,
+    stackable: 1,
+    shop_price: null,
+  },
+];
+
+export const shopListings = [];
+
+for (const [stat_id, code, name] of STAT_BOOST_DEFS) {
+  for (const tier of BOOST_TIERS) {
+    const id = nextItemId++;
+    items.push({
+      id,
+      code: `${code}_${tier.suffix}`,
+      display_name: `${name} ${tier.label}`,
+      description: `Permanently raises ${name} by ${tier.gain}.`,
+      item_kind: "stat_boost",
+      effect_payload: { stat_id, gain: tier.gain },
+      rarity_id: tier.rarity_id,
+      stackable: 1,
+      shop_price: tier.price,
+    });
+    shopListings.push({
+      id: shopListings.length + 1,
+      item_id: id,
+      price: tier.price,
+      sort_order: shopListings.length + 1,
+    });
+  }
+}
+
+export const APEX_SEAL_ITEM_ID = 1;
+
+/** Scan fill % by stage: Hatchling 30 → Fledgling 20 → Mature 10 → Ascendant 5 → Apex 1 */
+const STAGE_SCAN_GAIN = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 1 };
+
 /**
- * Species: [id, code, name, blurb, glyph, elementId, stage, rarityId, isStarter, baseScanGain]
- * Six lineages × 11 forms. Scan gain ≈ % filled per defeat.
+ * Species: [id, code, name, blurb, glyph, elementId, stage, rarityId, isStarter]
+ * Six lineages × 11 forms.
  */
 const SPECIES_ROWS = [
   // —— Ignis ——
-  [1, "emberkit", "Emberkit", "A hatchling spark of Ignis.", "🔥", 1, 1, 1, 1, 32],
-  [2, "cindertuft", "Cindertuft", "Tufts of living ember along its back.", "🕯️", 1, 2, 1, 0, 26],
-  [3, "pyrewhelp", "Pyrewhelp", "Attack path — fists of furnace heat.", "🌋", 1, 3, 2, 0, 18],
-  [4, "scorchpaw", "Scorchpaw", "Speed path — heat mirage runner.", "🦊", 1, 3, 2, 0, 18],
-  [5, "emberveil", "Emberveil", "Mana path — veiled flame caster.", "🪄", 1, 3, 2, 0, 18],
-  [6, "blazemane", "Blazemane", "A mane of solar fire.", "🦁", 1, 4, 3, 0, 12],
-  [7, "cinderstreak", "Cinderstreak", "Cuts the air into burning ribbons.", "☄️", 1, 4, 3, 0, 12],
-  [8, "solarwick", "Solarwick", "A living lantern of will.", "🔆", 1, 4, 3, 0, 12],
-  [9, "infernox", "Infernox", "Apex of Attack — walking furnace.", "🐉", 1, 5, 4, 0, 8],
-  [10, "helixion", "Helixion", "Apex of Speed — orbital blaze.", "💫", 1, 5, 4, 0, 8],
-  [11, "primordial", "Primordial", "Apex of Mana — first flame.", "👁️", 1, 5, 4, 0, 8],
+  [1, "emberkit", "Emberkit", "A hatchling spark of Ignis.", "🔥", 1, 1, 1, 1],
+  [2, "cindertuft", "Cindertuft", "Tufts of living ember along its back.", "🕯️", 1, 2, 1, 0],
+  [3, "pyrewhelp", "Pyrewhelp", "Attack path — fists of furnace heat.", "🌋", 1, 3, 2, 0],
+  [4, "scorchpaw", "Scorchpaw", "Speed path — heat mirage runner.", "🦊", 1, 3, 2, 0],
+  [5, "emberveil", "Emberveil", "Mana path — veiled flame caster.", "🪄", 1, 3, 2, 0],
+  [6, "blazemane", "Blazemane", "A mane of solar fire.", "🦁", 1, 4, 3, 0],
+  [7, "cinderstreak", "Cinderstreak", "Cuts the air into burning ribbons.", "☄️", 1, 4, 3, 0],
+  [8, "solarwick", "Solarwick", "A living lantern of will.", "🔆", 1, 4, 3, 0],
+  [9, "infernox", "Infernox", "Apex of Attack — walking furnace.", "🐉", 1, 5, 4, 0],
+  [10, "helixion", "Helixion", "Apex of Speed — orbital blaze.", "💫", 1, 5, 4, 0],
+  [11, "primordial", "Primordial", "Apex of Mana — first flame.", "👁️", 1, 5, 4, 0],
 
   // —— Veil ——
-  [12, "dewlet", "Dewlet", "A droplet that dreams of oceans.", "💧", 2, 1, 1, 1, 32],
-  [13, "drizzlet", "Drizzlet", "Soft rain given paws.", "🌧️", 2, 2, 1, 0, 26],
-  [14, "cascara", "Cascara", "Health path — tide that never breaks.", "🌊", 2, 3, 2, 0, 18],
-  [15, "rippletide", "Rippletide", "Speed path — skims every crest.", "🐟", 2, 3, 2, 0, 18],
-  [16, "murkfin", "Murkfin", "Defense path — shell of the deep.", "🐚", 2, 3, 2, 0, 18],
-  [17, "tidalking", "Tidalking", "Commands the swell.", "🐋", 2, 4, 3, 0, 12],
-  [18, "seaverge", "Seaverge", "A blade of living current.", "🗡️", 2, 4, 3, 0, 12],
-  [19, "abysshell", "Abysshell", "Pressure made armor.", "🛡️", 2, 4, 3, 0, 12],
-  [20, "leviathan", "Leviathan", "Apex of Health — the deep itself.", "🦑", 2, 5, 4, 0, 8],
-  [21, "spindrift", "Spindrift", "Apex of Speed — storm spray incarnate.", "🌪️", 2, 5, 4, 0, 8],
-  [22, "abyssrex", "Abyssrex", "Apex of Defense — trench sovereign.", "🐊", 2, 5, 4, 0, 8],
+  [12, "dewlet", "Dewlet", "A droplet that dreams of oceans.", "💧", 2, 1, 1, 1],
+  [13, "drizzlet", "Drizzlet", "Soft rain given paws.", "🌧️", 2, 2, 1, 0],
+  [14, "cascara", "Cascara", "Health path — tide that never breaks.", "🌊", 2, 3, 2, 0],
+  [15, "rippletide", "Rippletide", "Speed path — skims every crest.", "🐟", 2, 3, 2, 0],
+  [16, "murkfin", "Murkfin", "Defense path — shell of the deep.", "🐚", 2, 3, 2, 0],
+  [17, "tidalking", "Tidalking", "Commands the swell.", "🐋", 2, 4, 3, 0],
+  [18, "seaverge", "Seaverge", "A blade of living current.", "🗡️", 2, 4, 3, 0],
+  [19, "abysshell", "Abysshell", "Pressure made armor.", "🛡️", 2, 4, 3, 0],
+  [20, "leviathan", "Leviathan", "Apex of Health — the deep itself.", "🦑", 2, 5, 4, 0],
+  [21, "spindrift", "Spindrift", "Apex of Speed — storm spray incarnate.", "🌪️", 2, 5, 4, 0],
+  [22, "abyssrex", "Abyssrex", "Apex of Defense — trench sovereign.", "🐊", 2, 5, 4, 0],
 
   // —— Aether ——
-  [23, "gustling", "Gustling", "A breeze that refuses to land.", "🍃", 3, 1, 1, 1, 32],
-  [24, "fluffgale", "Fluffgale", "Cloud-soft and suddenly sharp.", "☁️", 3, 2, 1, 0, 26],
-  [25, "zephyrix", "Zephyrix", "Speed path — ribbon of wind.", "🦅", 3, 3, 2, 0, 18],
-  [26, "galeclaw", "Galeclaw", "Attack path — talons in the gale.", "🦉", 3, 3, 2, 0, 18],
-  [27, "nimbat", "Nimbat", "Mana path — storm whisperer.", "🦇", 3, 3, 2, 0, 18],
-  [28, "stormara", "Stormara", "Thunder-winged hunter.", "⚡", 3, 4, 3, 0, 12],
-  [29, "skyshard", "Skyshard", "A spear of pressurized air.", "💠", 3, 4, 3, 0, 12],
-  [30, "cyclonix", "Cyclonix", "Eye of the spinning choir.", "🌀", 3, 4, 3, 0, 12],
-  [31, "tempestlord", "Tempestlord", "Apex of Speed — sky's final word.", "👑", 3, 5, 4, 0, 8],
-  [32, "aetherwing", "Aetherwing", "Apex of Attack — wings that shear stone.", "🪽", 3, 5, 4, 0, 8],
-  [33, "voidgale", "Voidgale", "Apex of Mana — wind from nowhere.", "🌫️", 3, 5, 4, 0, 8],
+  [23, "gustling", "Gustling", "A breeze that refuses to land.", "🍃", 3, 1, 1, 1],
+  [24, "fluffgale", "Fluffgale", "Cloud-soft and suddenly sharp.", "☁️", 3, 2, 1, 0],
+  [25, "zephyrix", "Zephyrix", "Speed path — ribbon of wind.", "🦅", 3, 3, 2, 0],
+  [26, "galeclaw", "Galeclaw", "Attack path — talons in the gale.", "🦉", 3, 3, 2, 0],
+  [27, "nimbat", "Nimbat", "Mana path — storm whisperer.", "🦇", 3, 3, 2, 0],
+  [28, "stormara", "Stormara", "Thunder-winged hunter.", "⚡", 3, 4, 3, 0],
+  [29, "skyshard", "Skyshard", "A spear of pressurized air.", "💠", 3, 4, 3, 0],
+  [30, "cyclonix", "Cyclonix", "Eye of the spinning choir.", "🌀", 3, 4, 3, 0],
+  [31, "tempestlord", "Tempestlord", "Apex of Speed — sky's final word.", "👑", 3, 5, 4, 0],
+  [32, "aetherwing", "Aetherwing", "Apex of Attack — wings that shear stone.", "🪽", 3, 5, 4, 0],
+  [33, "voidgale", "Voidgale", "Apex of Mana — wind from nowhere.", "🌫️", 3, 5, 4, 0],
 
   // —— Terra ——
-  [34, "pebblit", "Pebblit", "A pebble that learned to walk.", "🪨", 4, 1, 1, 1, 32],
-  [35, "gravelpup", "Gravelpup", "Dusty paws, stubborn grin.", "🐕", 4, 2, 1, 0, 26],
-  [36, "boulderfist", "Boulderfist", "Attack path — knuckles of granite.", "🥊", 4, 3, 2, 0, 18],
-  [37, "plateback", "Plateback", "Defense path — walking rampart.", "🐢", 4, 3, 2, 0, 18],
-  [38, "quartzeye", "Quartzeye", "Mana path — crystal focus.", "💎", 4, 3, 2, 0, 18],
-  [39, "megolith", "Megolith", "A hillside given purpose.", "🗿", 4, 4, 3, 0, 12],
-  [40, "bastion", "Bastion", "Walls that refuse siege.", "🏰", 4, 4, 3, 0, 12],
-  [41, "geodeheart", "Geodeheart", "Hollow stone, radiant core.", "🔮", 4, 4, 3, 0, 12],
-  [42, "tectonox", "Tectonox", "Apex of Attack — faultline tyrant.", "🌋", 4, 5, 4, 0, 8],
-  [43, "aegirith", "Aegirith", "Apex of Defense — unbreakable plate.", "🛡️", 4, 5, 4, 0, 8],
-  [44, "obsidian", "Obsidian", "Apex of Mana — volcanic glass mind.", "⬛", 4, 5, 4, 0, 8],
+  [34, "pebblit", "Pebblit", "A pebble that learned to walk.", "🪨", 4, 1, 1, 1],
+  [35, "gravelpup", "Gravelpup", "Dusty paws, stubborn grin.", "🐕", 4, 2, 1, 0],
+  [36, "boulderfist", "Boulderfist", "Attack path — knuckles of granite.", "🥊", 4, 3, 2, 0],
+  [37, "plateback", "Plateback", "Defense path — walking rampart.", "🐢", 4, 3, 2, 0],
+  [38, "quartzeye", "Quartzeye", "Mana path — crystal focus.", "💎", 4, 3, 2, 0],
+  [39, "megolith", "Megolith", "A hillside given purpose.", "🗿", 4, 4, 3, 0],
+  [40, "bastion", "Bastion", "Walls that refuse siege.", "🏰", 4, 4, 3, 0],
+  [41, "geodeheart", "Geodeheart", "Hollow stone, radiant core.", "🔮", 4, 4, 3, 0],
+  [42, "tectonox", "Tectonox", "Apex of Attack — faultline tyrant.", "🌋", 4, 5, 4, 0],
+  [43, "aegirith", "Aegirith", "Apex of Defense — unbreakable plate.", "🛡️", 4, 5, 4, 0],
+  [44, "obsidian", "Obsidian", "Apex of Mana — volcanic glass mind.", "⬛", 4, 5, 4, 0],
 
   // —— Umbral ——
-  [45, "duskling", "Duskling", "A shadow that forgot the sun.", "🌑", 5, 1, 1, 1, 32],
-  [46, "gloamkit", "Gloamkit", "Soft steps in the half-light.", "🐈‍⬛", 5, 2, 1, 0, 26],
-  [47, "nightfang", "Nightfang", "Attack path — teeth in the dark.", "🐺", 5, 3, 2, 0, 18],
-  [48, "veilwisp", "Veilwisp", "Speed path — slips between glances.", "👻", 5, 3, 2, 0, 18],
-  [49, "hexmoth", "Hexmoth", "Mana path — curse-winged whisper.", "🦋", 5, 3, 2, 0, 18],
-  [50, "umbrakhan", "Umbrakhan", "A throne of absence.", "🦇", 5, 4, 3, 0, 12],
-  [51, "slipshade", "Slipshade", "Never quite where you look.", "🫥", 5, 4, 3, 0, 12],
-  [52, "nocturne", "Nocturne", "A hymn of quiet dread.", "🎶", 5, 4, 3, 0, 12],
-  [53, "voidreign", "Voidreign", "Apex of Attack — eclipse sovereign.", "👑", 5, 5, 4, 0, 8],
-  [54, "phantasm", "Phantasm", "Apex of Speed — afterimage incarnate.", "🌫️", 5, 5, 4, 0, 8],
-  [55, "nethercall", "Nethercall", "Apex of Mana — voice from below.", "👁️", 5, 5, 4, 0, 8],
+  [45, "duskling", "Duskling", "A shadow that forgot the sun.", "🌑", 5, 1, 1, 1],
+  [46, "gloamkit", "Gloamkit", "Soft steps in the half-light.", "🐈‍⬛", 5, 2, 1, 0],
+  [47, "nightfang", "Nightfang", "Attack path — teeth in the dark.", "🐺", 5, 3, 2, 0],
+  [48, "veilwisp", "Veilwisp", "Speed path — slips between glances.", "👻", 5, 3, 2, 0],
+  [49, "hexmoth", "Hexmoth", "Mana path — curse-winged whisper.", "🦋", 5, 3, 2, 0],
+  [50, "umbrakhan", "Umbrakhan", "A throne of absence.", "🦇", 5, 4, 3, 0],
+  [51, "slipshade", "Slipshade", "Never quite where you look.", "🫥", 5, 4, 3, 0],
+  [52, "nocturne", "Nocturne", "A hymn of quiet dread.", "🎶", 5, 4, 3, 0],
+  [53, "voidreign", "Voidreign", "Apex of Attack — eclipse sovereign.", "👑", 5, 5, 4, 0],
+  [54, "phantasm", "Phantasm", "Apex of Speed — afterimage incarnate.", "🌫️", 5, 5, 4, 0],
+  [55, "nethercall", "Nethercall", "Apex of Mana — voice from below.", "👁️", 5, 5, 4, 0],
 
   // —— Radiance ——
-  [56, "gleamlet", "Gleamlet", "A mote that wants to be a star.", "✨", 6, 1, 1, 1, 32],
-  [57, "sunfleck", "Sunfleck", "Warmth with tiny wings.", "🐥", 6, 2, 1, 0, 26],
-  [58, "brightpaw", "Brightpaw", "Attack path — fists of daylight.", "☀️", 6, 3, 2, 0, 18],
-  [59, "aurewing", "Aurewing", "Speed path — gold-trimmed flight.", "🕊️", 6, 3, 2, 0, 18],
-  [60, "lumenhart", "Lumenhart", "Mana path — healing brilliance.", "💛", 6, 3, 2, 0, 18],
-  [61, "solarix", "Solarix", "Noon given claws.", "🦁", 6, 4, 3, 0, 12],
-  [62, "halcyon", "Halcyon", "Calm winds of clear light.", "🌤️", 6, 4, 3, 0, 12],
-  [63, "sanctflare", "Sanctflare", "A beacon that burns clean.", "🕯️", 6, 4, 3, 0, 12],
-  [64, "aurorae", "Aurorae", "Apex of Attack — dawn's judgment.", "🌅", 6, 5, 4, 0, 8],
-  [65, "seraphine", "Seraphine", "Apex of Speed — skyfire courier.", "🪽", 6, 5, 4, 0, 8],
-  [66, "luminarch", "Luminarch", "Apex of Mana — first light kept.", "🌟", 6, 5, 4, 0, 8],
+  [56, "gleamlet", "Gleamlet", "A mote that wants to be a star.", "✨", 6, 1, 1, 1],
+  [57, "sunfleck", "Sunfleck", "Warmth with tiny wings.", "🐥", 6, 2, 1, 0],
+  [58, "brightpaw", "Brightpaw", "Attack path — fists of daylight.", "☀️", 6, 3, 2, 0],
+  [59, "aurewing", "Aurewing", "Speed path — gold-trimmed flight.", "🕊️", 6, 3, 2, 0],
+  [60, "lumenhart", "Lumenhart", "Mana path — healing brilliance.", "💛", 6, 3, 2, 0],
+  [61, "solarix", "Solarix", "Noon given claws.", "🦁", 6, 4, 3, 0],
+  [62, "halcyon", "Halcyon", "Calm winds of clear light.", "🌤️", 6, 4, 3, 0],
+  [63, "sanctflare", "Sanctflare", "A beacon that burns clean.", "🕯️", 6, 4, 3, 0],
+  [64, "aurorae", "Aurorae", "Apex of Attack — dawn's judgment.", "🌅", 6, 5, 4, 0],
+  [65, "seraphine", "Seraphine", "Apex of Speed — skyfire courier.", "🪽", 6, 5, 4, 0],
+  [66, "luminarch", "Luminarch", "Apex of Mana — first light kept.", "🌟", 6, 5, 4, 0],
 ];
 
 export const species = SPECIES_ROWS.map(
-  ([id, code, display_name, blurb, glyph, element_id, stage, rarity_id, is_starter, base_scan_gain]) => {
+  ([id, code, display_name, blurb, glyph, element_id, stage, rarity_id, is_starter]) => {
     const element = elements.find((e) => e.id === element_id);
+    const base_scan_gain = STAGE_SCAN_GAIN[stage];
     return {
       id, code, display_name, blurb, glyph, element_id, stage, rarity_id, is_starter,
       base_scan_gain, base_catch_rate: base_scan_gain / 100,
@@ -266,63 +320,38 @@ export const evolutionPaths = [
   id, ancestor_species_id, descendant_species_id, branch_index, label, sort_order: branch_index,
 }));
 
-/** Requirements: [pathId, kind, statId|null, itemId|null, threshold] — Apex Seal is item 1 */
+/**
+ * Requirements: [pathId, kind, statId|null, itemId|null, threshold]
+ * Every path gates on Level; branches also need focused stats / Apex Seal.
+ */
+function lineReqs(fledglingPath, maturePaths, ascendantPaths, apexPaths, fledglingStat) {
+  const rows = [];
+  rows.push([fledglingPath, "level", null, null, 8]);
+  rows.push([fledglingPath, "stat", fledglingStat, null, 10]);
+  for (const [pathId, statId] of maturePaths) {
+    rows.push([pathId, "level", null, null, 20]);
+    rows.push([pathId, "stat", statId, null, 16]);
+  }
+  for (const [pathId, statId] of ascendantPaths) {
+    rows.push([pathId, "level", null, null, 40]);
+    rows.push([pathId, "stat", statId, null, 22]);
+  }
+  for (const [pathId, statId] of apexPaths) {
+    rows.push([pathId, "level", null, null, 65]);
+    rows.push([pathId, "stat", statId, null, 28]);
+    rows.push([pathId, "item", null, APEX_SEAL_ITEM_ID, 1]);
+  }
+  return rows;
+}
+
 let erId = 1;
 export const evolutionRequirements = [
-  // Ignis
-  [1, "stat", 1, null, 10],
-  [2, "stat", 1, null, 16], [3, "stat", 3, null, 16], [4, "stat", 5, null, 16],
-  [5, "stat", 1, null, 22], [5, "battles_won", null, null, 3],
-  [6, "stat", 3, null, 22], [6, "battles_won", null, null, 3],
-  [7, "stat", 5, null, 22], [7, "battles_won", null, null, 3],
-  [8, "stat", 1, null, 28], [8, "item", null, 1, 1],
-  [9, "stat", 3, null, 28], [9, "item", null, 1, 1],
-  [10, "stat", 5, null, 28], [10, "item", null, 1, 1],
-  // Veil
-  [11, "stat", 2, null, 10],
-  [12, "stat", 2, null, 16], [13, "stat", 3, null, 16], [14, "stat", 4, null, 16],
-  [15, "stat", 2, null, 22], [15, "battles_won", null, null, 3],
-  [16, "stat", 3, null, 22], [16, "battles_won", null, null, 3],
-  [17, "stat", 4, null, 22], [17, "battles_won", null, null, 3],
-  [18, "stat", 2, null, 28], [18, "item", null, 1, 1],
-  [19, "stat", 3, null, 28], [19, "item", null, 1, 1],
-  [20, "stat", 4, null, 28], [20, "item", null, 1, 1],
-  // Aether
-  [21, "stat", 3, null, 10],
-  [22, "stat", 3, null, 16], [23, "stat", 1, null, 16], [24, "stat", 5, null, 16],
-  [25, "stat", 3, null, 22], [25, "battles_won", null, null, 3],
-  [26, "stat", 1, null, 22], [26, "battles_won", null, null, 3],
-  [27, "stat", 5, null, 22], [27, "battles_won", null, null, 3],
-  [28, "stat", 3, null, 28], [28, "item", null, 1, 1],
-  [29, "stat", 1, null, 28], [29, "item", null, 1, 1],
-  [30, "stat", 5, null, 28], [30, "item", null, 1, 1],
-  // Terra
-  [31, "stat", 4, null, 10],
-  [32, "stat", 1, null, 16], [33, "stat", 4, null, 16], [34, "stat", 5, null, 16],
-  [35, "stat", 1, null, 22], [35, "battles_won", null, null, 3],
-  [36, "stat", 4, null, 22], [36, "battles_won", null, null, 3],
-  [37, "stat", 5, null, 22], [37, "battles_won", null, null, 3],
-  [38, "stat", 1, null, 28], [38, "item", null, 1, 1],
-  [39, "stat", 4, null, 28], [39, "item", null, 1, 1],
-  [40, "stat", 5, null, 28], [40, "item", null, 1, 1],
-  // Umbral
-  [41, "stat", 5, null, 10],
-  [42, "stat", 1, null, 16], [43, "stat", 3, null, 16], [44, "stat", 5, null, 16],
-  [45, "stat", 1, null, 22], [45, "battles_won", null, null, 3],
-  [46, "stat", 3, null, 22], [46, "battles_won", null, null, 3],
-  [47, "stat", 5, null, 22], [47, "battles_won", null, null, 3],
-  [48, "stat", 1, null, 28], [48, "item", null, 1, 1],
-  [49, "stat", 3, null, 28], [49, "item", null, 1, 1],
-  [50, "stat", 5, null, 28], [50, "item", null, 1, 1],
-  // Radiance
-  [51, "stat", 2, null, 10],
-  [52, "stat", 1, null, 16], [53, "stat", 3, null, 16], [54, "stat", 5, null, 16],
-  [55, "stat", 1, null, 22], [55, "battles_won", null, null, 3],
-  [56, "stat", 3, null, 22], [56, "battles_won", null, null, 3],
-  [57, "stat", 5, null, 22], [57, "battles_won", null, null, 3],
-  [58, "stat", 1, null, 28], [58, "item", null, 1, 1],
-  [59, "stat", 3, null, 28], [59, "item", null, 1, 1],
-  [60, "stat", 5, null, 28], [60, "item", null, 1, 1],
+  ...lineReqs(1, [[2, 1], [3, 3], [4, 5]], [[5, 1], [6, 3], [7, 5]], [[8, 1], [9, 3], [10, 5]], 1),
+  ...lineReqs(11, [[12, 2], [13, 3], [14, 4]], [[15, 2], [16, 3], [17, 4]], [[18, 2], [19, 3], [20, 4]], 2),
+  ...lineReqs(21, [[22, 3], [23, 1], [24, 5]], [[25, 3], [26, 1], [27, 5]], [[28, 3], [29, 1], [30, 5]], 3),
+  ...lineReqs(31, [[32, 1], [33, 4], [34, 5]], [[35, 1], [36, 4], [37, 5]], [[38, 1], [39, 4], [40, 5]], 4),
+  ...lineReqs(41, [[42, 1], [43, 3], [44, 5]], [[45, 1], [46, 3], [47, 5]], [[48, 1], [49, 3], [50, 5]], 5),
+  ...lineReqs(51, [[52, 1], [53, 3], [54, 5]], [[55, 1], [56, 3], [57, 5]], [[58, 1], [59, 3], [60, 5]], 2),
 ].map(([evolution_path_id, requirement_kind, stat_id, item_id, threshold_value]) => ({
   id: erId++,
   evolution_path_id,
@@ -333,13 +362,13 @@ export const evolutionRequirements = [
 }));
 
 export const zones = [
-  [1, "cinderwaste", "Cinderwaste", "Ash drifts over cracked Ignis earth.", 2],
-  [2, "mistveil", "Mistveil", "Fog curls between Veil tidepools.", 2],
-  [3, "skyshear", "Skyshear", "Aether winds shear the cliff edge.", 2],
-  [4, "stoneheart", "Stoneheart", "Terra ridges hum underfoot.", 2],
-  [5, "nightwell", "Nightwell", "Umbral dark pools without a bottom.", 2],
-  [6, "dawnfield", "Dawnfield", "Radiance light pools in the grass.", 2],
-  [7, "crossroads", "Crossroads", "All six affinities wander here.", 3],
+  [1, "cinderwaste", "Cinderwaste", "Ash drifts over cracked Ignis earth.", 0],
+  [2, "mistveil", "Mistveil", "Fog curls between Veil tidepools.", 0],
+  [3, "skyshear", "Skyshear", "Aether winds shear the cliff edge.", 0],
+  [4, "stoneheart", "Stoneheart", "Terra ridges hum underfoot.", 0],
+  [5, "nightwell", "Nightwell", "Umbral dark pools without a bottom.", 0],
+  [6, "dawnfield", "Dawnfield", "Radiance light pools in the grass.", 0],
+  [7, "crossroads", "Crossroads", "All six affinities wander here.", 0],
 ].map(([id, code, display_name, vibe, energy_cost]) => ({
   id, code, display_name, vibe, energy_cost, min_player_level: 1, name: display_name,
 }));
@@ -372,17 +401,5 @@ export const zoneEncounters = [
   stat_variance_max: stage <= 2 ? 1.0 : 1.05,
 }));
 
-export const trainingDrills = stats
-  .filter((s) => s.trainable)
-  .map((s, i) => ({
-    id: i + 1,
-    code: `${s.code}_drill`,
-    display_name: `${s.display_name} Drill`,
-    description: s.description,
-    stat_id: s.id,
-    energy_cost: 1,
-    base_gain: 1,
-    critical_chance: 0.18,
-    critical_bonus: 1,
-    coin_reward: 1,
-  }));
+/** @deprecated Training removed — stats are raised via shop boosters. */
+export const trainingDrills = [];

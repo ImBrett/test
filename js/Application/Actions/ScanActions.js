@@ -2,28 +2,41 @@ import { ok, fail } from "../../Domain/DTOs/Result.js";
 import { appendEvent } from "../../Domain/Rules/CreatureEnricher.js";
 import { DomainEventTypes } from "../../Domain/Events/DomainEvents.js";
 
+/** Fixed scan fill % by species stage (Hatchling→Apex). */
+export const STAGE_SCAN_GAIN = Object.freeze({
+  1: 30,
+  2: 20,
+  3: 10,
+  4: 5,
+  5: 1,
+});
+
 /**
  * Apply scan progress for a defeated wild species.
- * Returns { speciesId, gain, scanLevel, canClaim }.
+ * Returns { speciesId, previousLevel, gain, scanLevel, canClaim }.
  */
-export function applyScanProgress({ catalog, uow, random, speciesId }) {
+export function applyScanProgress({ catalog, uow, speciesId }) {
   const player = uow.getPlayer();
   const species = catalog.speciesById(speciesId);
   if (!player || !species) return null;
 
-  const base = species.base_scan_gain ?? 20;
-  const variance = 0.85 + random.next() * 0.3;
-  const gain = Math.max(1, Math.min(40, Math.round(base * variance)));
+  const previousLevel = uow.getScan(speciesId)?.scan_level ?? 0;
+  const gain = STAGE_SCAN_GAIN[species.stage] ?? 10;
   const row = uow.upsertScan(speciesId, gain);
+  const applied = row.scan_level - previousLevel;
+
   appendEvent(uow, player.id, "Player", player.id, DomainEventTypes.SCAN_PROGRESS, {
     species_id: speciesId,
-    gain,
+    gain: applied,
+    previous_level: previousLevel,
     scan_level: row.scan_level,
   });
+
   return {
     speciesId,
     speciesName: species.display_name,
-    gain,
+    previousLevel,
+    gain: applied,
     scanLevel: row.scan_level,
     canClaim: row.scan_level >= 100 && !row.claimed,
   };

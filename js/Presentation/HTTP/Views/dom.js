@@ -25,7 +25,7 @@ export function toast(msg) {
 export function showScreen(id) {
   $$(".screen").forEach((s) => s.classList.toggle("active", s.id === id));
   const tab = id.replace("screen-", "");
-  const hub = ["party", "train", "explore", "scan", "evolve"].includes(tab);
+  const hub = ["party", "explore", "scan", "shop"].includes(tab);
   $("#nav").classList.toggle("hidden", !hub);
   if (hub) {
     $$(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
@@ -34,9 +34,6 @@ export function showScreen(id) {
 
 export function paintMeters(state) {
   const r = state.player?.resources;
-  $$(".meter-energy").forEach((el) => {
-    el.textContent = r ? `${r.energy}/${r.energyMax}` : "0/0";
-  });
   $$(".meter-coins").forEach((el) => {
     el.textContent = String(r?.coins ?? 0);
   });

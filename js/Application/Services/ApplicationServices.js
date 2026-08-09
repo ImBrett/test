@@ -7,7 +7,6 @@ import { ValidationError } from "../../Domain/DTOs/Validation.js";
 import {
   CreatePlayerRequest,
   SelectStarterRequest,
-  TrainCreatureRequest,
   SetActiveCreatureRequest,
   RenameCreatureRequest,
   EvolveCreatureRequest,
@@ -15,15 +14,15 @@ import {
   ExploreZoneRequest,
   BattleActionRequest,
   ClaimScanRequest,
-  RestPlayerRequest,
+  BuyStatBoostRequest,
 } from "../../Domain/DTOs/Requests/index.js";
 import {
   toCreatureDto,
   toAppStateDto,
   toInventoryDto,
-  toTrainResultDto,
   toBattleSessionDto,
   toScanDto,
+  toShopListingDto,
 } from "../../Domain/DTOs/Responses/index.js";
 import { enrichCreature } from "../../Domain/Rules/CreatureEnricher.js";
 
@@ -48,7 +47,6 @@ export function createApplicationServices(deps) {
     actions: {
       createPlayer,
       obtainCreature,
-      trainCreature,
       setActiveCreature,
       renameCreature,
       evolveCreature,
@@ -56,8 +54,7 @@ export function createApplicationServices(deps) {
       startEncounter,
       resolveBattleTurn,
       claimScannedSpecies,
-      restPlayer,
-      regenerateEnergy,
+      buyStatBoost,
     },
   } = deps;
 
@@ -76,13 +73,13 @@ export function createApplicationServices(deps) {
   }
 
   function getAppState() {
-    regenerateEnergy.execute();
     return toAppStateDto({
       player: uow.getPlayer(),
       resources: uow.getResources(),
       creatures: enrichedParty(),
       inventory: toInventoryDto(uow.listInventory(), catalog),
       scans: scanEntries(),
+      shop: catalog.shopListings().map(toShopListingDto),
       catalog,
       events: uow.recentDomainEvents().map((e) => ({
         type: e.event_type,
@@ -98,16 +95,6 @@ export function createApplicationServices(deps) {
       const req = CreatePlayerRequest.from(raw);
       const result = createPlayer.execute(req);
       if (!result.ok) return result;
-      return ok(getAppState());
-    }),
-    rest: guard(() => {
-      RestPlayerRequest.from();
-      const result = restPlayer.execute();
-      if (!result.ok) return result;
-      return ok(getAppState());
-    }),
-    regenerateEnergy: guard(() => {
-      regenerateEnergy.execute();
       return ok(getAppState());
     }),
     getState: guard(() => ok(getAppState())),
@@ -137,18 +124,6 @@ export function createApplicationServices(deps) {
       return ok(getAppState());
     }),
     getParty: guard(() => ok(enrichedParty())),
-  };
-
-  const trainingService = {
-    train: guard((raw) => {
-      const req = TrainCreatureRequest.from(raw);
-      const result = trainCreature.execute(req);
-      if (!result.ok) return result;
-      return ok({
-        train: toTrainResultDto(result.data),
-        state: getAppState(),
-      });
-    }),
   };
 
   const evolutionService = {
@@ -219,14 +194,35 @@ export function createApplicationServices(deps) {
     list: guard(() => ok(scanEntries())),
   };
 
+  const shopService = {
+    buy: guard((raw) => {
+      const req = BuyStatBoostRequest.from(raw);
+      const result = buyStatBoost.execute(req);
+      if (!result.ok) return result;
+      return ok({
+        purchase: {
+          gain: result.data.gain,
+          value: result.data.value,
+          price: result.data.price,
+          stat: {
+            id: result.data.stat.id,
+            name: result.data.stat.display_name,
+            color: result.data.stat.color,
+          },
+        },
+        state: getAppState(),
+      });
+    }),
+  };
+
   return {
     playerService,
     partyService,
-    trainingService,
     evolutionService,
     exploreService,
     battleService,
     scanService,
+    shopService,
     getAppState,
   };
 }

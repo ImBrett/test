@@ -53,6 +53,7 @@ export function toCreatureDto(enriched) {
     nickname: enriched.nickname,
     level: enriched.level,
     experience: enriched.experience,
+    xpToNext: enriched.xpToNext ?? 0,
     battlesWon: enriched.battles_won,
     isActive: !!enriched.is_active,
     power: enriched.power,
@@ -122,12 +123,23 @@ export function toPlayerDto(player, resources) {
     experience: player.experience,
     resources: resources
       ? {
-          energy: resources.energy,
-          energyMax: resources.energy_max,
           coins: resources.coins,
-          energyRegenSeconds: resources.energy_regen_seconds,
         }
       : null,
+  };
+}
+
+export function toShopListingDto(listing) {
+  const item = listing.item;
+  return {
+    itemId: listing.item_id,
+    price: listing.price,
+    code: item.code,
+    name: item.display_name,
+    description: item.description,
+    kind: item.item_kind,
+    gain: item.effect_payload?.gain ?? 0,
+    statId: item.effect_payload?.stat_id ?? null,
   };
 }
 
@@ -177,7 +189,16 @@ export function toScanDto(row, catalog) {
   };
 }
 
-export function toAppStateDto({ player, resources, creatures, inventory, scans = [], catalog, events }) {
+export function toAppStateDto({
+  player,
+  resources,
+  creatures,
+  inventory,
+  scans = [],
+  shop = [],
+  catalog,
+  events,
+}) {
   const active = creatures.find((c) => c.isActive) || creatures[0] || null;
   return {
     player: toPlayerDto(player, resources),
@@ -185,6 +206,7 @@ export function toAppStateDto({ player, resources, creatures, inventory, scans =
     activeCreatureId: active?.id ?? null,
     inventory,
     scans,
+    shop,
     zones: catalog.zones.map(toZoneDto),
     starters: catalog.starterSpeciesIds().map((id) => {
       const s = catalog.speciesById(id);
@@ -233,15 +255,3 @@ export function toBattleSessionDto(session) {
   };
 }
 
-export function toTrainResultDto(result) {
-  return {
-    gain: result.gain,
-    value: result.value,
-    critical: !!result.critical,
-    stat: {
-      id: result.stat.id,
-      name: result.stat.display_name,
-      color: result.stat.color,
-    },
-  };
-}

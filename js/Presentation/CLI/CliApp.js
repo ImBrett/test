@@ -19,32 +19,33 @@ async function main() {
   const emit = async (type, payload) => (await bus.emit(type, payload))[0];
 
   let res = await emit(AppEvents.CREATE_PLAYER, { name: "TerminalHero" });
-  console.log("create →", res.data.player.name);
+  console.log("create →", res.data.player.name, "coins", res.data.player.resources.coins);
 
   res = await emit(AppEvents.SELECT_STARTER, { speciesId: 1 });
   const creatureId = res.data.party[0].id;
-  console.log("starter →", res.data.party[0].nickname);
+  console.log("starter →", res.data.party[0].nickname, "Lv.", res.data.party[0].level);
 
-  res = await emit(AppEvents.TRAIN_CREATURE, { creatureId, statId: 1 });
-  console.log("train →", `+${res.data.train.gain} ${res.data.train.stat.name}`);
+  const dust = res.data.shop.find((s) => s.code === "attack_dust");
+  res = await emit(AppEvents.BUY_STAT_BOOST, { itemId: dust.itemId, creatureId });
+  console.log("shop →", `+${res.data.purchase.gain} ${res.data.purchase.stat.name}`);
 
   res = await emit(AppEvents.EXPLORE_ZONE, { zoneCode: "cinderwaste" });
   console.log("encounter →", res.data.battle.wild.nickname);
 
-  // Force a win loop via act until over (or skip if already over)
   let session = res.data.session;
   for (let i = 0; i < 20 && !session.over; i++) {
     res = await emit(AppEvents.BATTLE_ACTION, { battleSession: session, actionCode: "burst" });
     if (!res.ok) break;
     session = res.data.session;
-    if (res.data.turn?.result?.scan) {
-      console.log("scan →", res.data.turn.result.scan);
+    if (res.data.turn?.result) {
+      console.log("win →", res.data.turn.result);
     }
   }
 
-  console.log("energy →", services.getAppState().player.resources.energy);
-  console.log("scans →", services.getAppState().scans.length);
-  console.log("OK — swap createApplication({ uow: createSqliteUnitOfWork(db) }) when ready.");
+  const st = services.getAppState();
+  console.log("party level →", st.party[0].level, "xp", st.party[0].experience);
+  console.log("scans →", st.scans.length);
+  console.log("OK");
 }
 
 main().catch((err) => {

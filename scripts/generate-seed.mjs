@@ -57,6 +57,12 @@ lines.push(
 );
 lines.push("");
 
+if (seed.shopListings?.length) {
+  lines.push("-- Shop price catalog (application reads seedData.shopListings; SQL mirror for docs)");
+  lines.push(`-- ${seed.shopListings.length} listings: ${seed.shopListings.map((l) => `${l.item_id}@${l.price}`).join(", ")}`);
+  lines.push("");
+}
+
 lines.push("INSERT INTO species (id, code, display_name, blurb, glyph, element_id, stage, rarity_id, is_starter, base_scan_gain, created_at, updated_at) VALUES");
 lines.push(
   seed.species

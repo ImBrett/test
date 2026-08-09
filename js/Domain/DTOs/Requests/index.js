@@ -32,24 +32,6 @@ export class SelectStarterRequest {
   }
 }
 
-export class TrainCreatureRequest {
-  constructor(raw) {
-    this.creatureId = Number(raw?.creatureId);
-    this.statId = Number(raw?.statId);
-  }
-  static from(raw) {
-    const dto = new TrainCreatureRequest(raw);
-    dto.validate();
-    return dto;
-  }
-  validate() {
-    assertValid([
-      ...requireInt(this.creatureId, "creatureId", { min: 1 }),
-      ...requireInt(this.statId, "statId", { min: 1, max: 9 }),
-    ]);
-  }
-}
-
 export class SetActiveCreatureRequest {
   constructor(raw) {
     this.creatureId = Number(raw?.creatureId);
@@ -161,9 +143,20 @@ export class ClaimScanRequest {
   }
 }
 
-export class RestPlayerRequest {
-  static from() {
-    return new RestPlayerRequest();
+export class BuyStatBoostRequest {
+  constructor(raw) {
+    this.itemId = Number(raw?.itemId);
+    this.creatureId = Number(raw?.creatureId);
   }
-  validate() {}
+  static from(raw) {
+    const dto = new BuyStatBoostRequest(raw);
+    dto.validate();
+    return dto;
+  }
+  validate() {
+    assertValid([
+      ...requireInt(this.itemId, "itemId", { min: 1 }),
+      ...requireInt(this.creatureId, "creatureId", { min: 1 }),
+    ]);
+  }
 }

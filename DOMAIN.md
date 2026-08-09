@@ -64,10 +64,17 @@ Cross-context references use IDs only (no shared mutable state).
 
 ## Scan obtain (Digimon-style)
 
-1. Defeat a wild species → fill `player_species_scans.scan_level` (0–100) using `species.base_scan_gain`.
-2. No catch items / orbs. Battle victory only awards scan progress (+ coins / rare Apex Seal).
-3. At 100%, claim the species from the Scan UI once (`claimed = 1`).
+1. Defeat a wild species → fill `player_species_scans.scan_level` (0–100).
+2. Fixed gains by stage: Hatchling **30%**, Fledgling **20%**, Mature **10%**, Ascendant **5%**, Apex **1%**.
+3. At 100%, claim from the Scan UI once (`claimed = 1`). No catch items.
 4. Elements: **Ignis, Veil, Aether, Terra, Umbral, Radiance** with self-weakness where noted.
+
+## Leveling & shop
+
+1. Creatures have **level 1–100** and XP from wild victories.
+2. Stats rise via **shop boosters** (+1 Dust / +2 Tonic / +3 Serum) purchased with coins.
+3. Evolution paths mix **level + stat** (and Apex Seal on final forms).
+4. No energy / training drills.
 
 
 ## Data-driven rule interpreters

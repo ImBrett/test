@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta
       name="description"
-      content="Morph — train pocket beasts, battle the wilds, evolve when their stats awaken."
+      content="Morph — battle the wilds, scan beasts, shop boosts, evolve through the stages."
     />
     <title>Morph</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -37,7 +37,7 @@
           </div>
           <div class="brand-block">
             <h1 class="brand">Morph</h1>
-            <p class="tagline">Train stats. Evolve beasts. A pocket RPG for idle moments.</p>
+            <p class="tagline">Scan the wilds. Spend coins. Evolve through the stages.</p>
             <div class="hero-actions">
               <button class="btn btn-primary" id="btn-continue">Continue</button>
               <button class="btn btn-secondary" id="btn-new-game">New Journey</button>
@@ -83,32 +83,14 @@
         <header class="topbar">
           <div class="who who-name">Traveler</div>
           <div class="meters">
-            <div class="meter energy"><span class="dot"></span><span class="meter-energy">20/20</span></div>
             <div class="meter coins"><span class="dot"></span><span class="meter-coins">0</span></div>
           </div>
         </header>
         <div class="section-head">
           <h1>Party</h1>
-          <button class="btn btn-ghost btn-sm" id="btn-rest">Rest · 15🪙</button>
+          <span>Tap a beast · Evolve from here</span>
         </div>
         <div class="pet-grid" id="party-grid"></div>
-      </section>
-
-      <!-- TRAIN -->
-      <section class="screen" id="screen-train">
-        <header class="topbar">
-          <div class="who who-name">Traveler</div>
-          <div class="meters">
-            <div class="meter energy"><span class="dot"></span><span class="meter-energy">20/20</span></div>
-            <div class="meter coins"><span class="dot"></span><span class="meter-coins">0</span></div>
-          </div>
-        </header>
-        <div class="section-head">
-          <h1>Train</h1>
-          <span>1 energy / drill</span>
-        </div>
-        <div class="train-pick" id="train-pick"></div>
-        <div class="train-stats" id="train-stats"></div>
       </section>
 
       <!-- EXPLORE -->
@@ -116,13 +98,12 @@
         <header class="topbar">
           <div class="who who-name">Traveler</div>
           <div class="meters">
-            <div class="meter energy"><span class="dot"></span><span class="meter-energy">20/20</span></div>
             <div class="meter coins"><span class="dot"></span><span class="meter-coins">0</span></div>
           </div>
         </header>
         <div class="section-head">
           <h1>Explore</h1>
-          <span>Wild encounters</span>
+          <span>Wild encounters · XP & scans</span>
         </div>
         <div class="zone-list" id="zone-list"></div>
       </section>
@@ -137,7 +118,6 @@
         <header class="topbar">
           <div class="who who-name">Traveler</div>
           <div class="meters">
-            <div class="meter energy"><span class="dot"></span><span class="meter-energy">20/20</span></div>
             <div class="meter coins"><span class="dot"></span><span class="meter-coins">0</span></div>
           </div>
         </header>
@@ -148,28 +128,42 @@
         <div class="scan-list" id="scan-list"></div>
       </section>
 
-      <!-- EVOLVE -->
+      <!-- SHOP -->
+      <section class="screen" id="screen-shop">
+        <header class="topbar">
+          <div class="who who-name">Traveler</div>
+          <div class="meters">
+            <div class="meter coins"><span class="dot"></span><span class="meter-coins">0</span></div>
+          </div>
+        </header>
+        <div class="section-head">
+          <h1>Shop</h1>
+          <span>Boost stats with coins</span>
+        </div>
+        <div class="shop-pick" id="shop-pick"></div>
+        <div class="shop-list" id="shop-list"></div>
+      </section>
+
+      <!-- EVOLVE (opened from party, not in nav) -->
       <section class="screen" id="screen-evolve">
         <header class="topbar">
           <div class="who who-name">Traveler</div>
           <div class="meters">
-            <div class="meter energy"><span class="dot"></span><span class="meter-energy">20/20</span></div>
             <div class="meter coins"><span class="dot"></span><span class="meter-coins">0</span></div>
           </div>
         </header>
         <div class="section-head">
           <h1>Evolve</h1>
-          <span>Stats unlock forms</span>
+          <button class="btn btn-ghost btn-sm" id="btn-evo-back">← Party</button>
         </div>
         <div class="evo-list" id="evo-list"></div>
       </section>
 
       <nav class="nav hidden" id="nav">
         <button class="nav-btn active" data-tab="party"><span class="ico">◈</span>Party</button>
-        <button class="nav-btn" data-tab="train"><span class="ico">▴</span>Train</button>
         <button class="nav-btn" data-tab="explore"><span class="ico">◎</span>Explore</button>
         <button class="nav-btn" data-tab="scan"><span class="ico">◌</span>Scan</button>
-        <button class="nav-btn" data-tab="evolve"><span class="ico">✧</span>Evolve</button>
+        <button class="nav-btn" data-tab="shop"><span class="ico">⬡</span>Shop</button>
       </nav>
     </div>
 
