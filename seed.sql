@@ -40,10 +40,10 @@ INSERT INTO stats (id, code, display_name, description, color, combat_role, crea
   (3, 'speed', 'Speed', 'Turn order priority', '#4DB8E8', 'speed', datetime('now'), datetime('now')),
   (4, 'defense', 'Defense', 'Damage reduction', '#C4A35A', 'defense', datetime('now'), datetime('now')),
   (5, 'mana', 'Mana', 'Special force & spell power', '#5EC8C0', 'special', datetime('now'), datetime('now')),
-  (6, 'crit_chance', 'Crit Chance', 'Chance to land critical hits (gear later)', '#F0C24B', 'crit', datetime('now'), datetime('now')),
-  (7, 'crit_damage', 'Crit Damage', 'Critical hit multiplier (gear later)', '#F08A4B', 'crit', datetime('now'), datetime('now')),
-  (8, 'effectiveness', 'Effectiveness', 'Chance to land attack extras', '#B07CFF', 'status', datetime('now'), datetime('now')),
-  (9, 'resilience', 'Resilience', 'Chance to resist attack extras', '#8AA0B8', 'status', datetime('now'), datetime('now'));
+  (6, 'crit_chance', 'Crit Chance', 'Chance to land critical hits (from gear)', '#F0C24B', 'crit', datetime('now'), datetime('now')),
+  (7, 'crit_damage', 'Crit Damage', 'Critical hit multiplier (from gear)', '#F08A4B', 'crit', datetime('now'), datetime('now')),
+  (8, 'effectiveness', 'Effectiveness', 'Land extras & pierce resilience (gear)', '#B07CFF', 'status', datetime('now'), datetime('now')),
+  (9, 'resilience', 'Resilience', 'Resist extras & blunt pierce (gear)', '#8AA0B8', 'status', datetime('now'), datetime('now'));
 
 INSERT INTO items (id, code, display_name, description, item_kind, effect_payload, rarity_id, stackable, created_at, updated_at) VALUES
   (1, 'apex_seal', 'Apex Seal', 'Required for Apex evolutions.', 'evolution', '{}', 3, 1, datetime('now'), datetime('now')),
@@ -66,12 +66,15 @@ INSERT INTO items (id, code, display_name, description, item_kind, effect_payloa
   (18, 'greater_salve', 'Greater Salve', 'In battle: restore 50% HP.', 'consumable', '{"battle":"heal_pct","heal_pct":0.5}', 2, 1, datetime('now'), datetime('now')),
   (19, 'clarity_herb', 'Clarity Herb', 'In battle: clear attack/defense/speed debuffs.', 'consumable', '{"battle":"clear_debuffs"}', 1, 1, datetime('now'), datetime('now')),
   (20, 'focus_draught', 'Focus Draught', 'In battle: clear debuffs and restore 15% HP.', 'consumable', '{"battle":"clear_debuffs","heal_pct":0.15}', 2, 1, datetime('now'), datetime('now')),
-  (21, 'ember_band', 'Ember Band', 'Equipment — coming soon.', 'equipment', '{"slot":"accessory"}', 2, 1, datetime('now'), datetime('now')),
-  (22, 'tide_charm', 'Tide Charm', 'Equipment — coming soon.', 'equipment', '{"slot":"accessory"}', 2, 1, datetime('now'), datetime('now')),
-  (23, 'aether_circlet', 'Aether Circlet', 'Equipment — coming soon.', 'equipment', '{"slot":"head"}', 3, 1, datetime('now'), datetime('now'));
+  (21, 'gear_chest_common', 'Common Gear Chest', 'Opens into a random common piece (6 slots). Reforge with gold.', 'equipment', '{"gear_chest":true,"rarity":"common"}', 1, 1, datetime('now'), datetime('now')),
+  (22, 'gear_chest_uncommon', 'Uncommon Gear Chest', 'Opens into a random uncommon piece (6 slots). Reforge with gold.', 'equipment', '{"gear_chest":true,"rarity":"uncommon"}', 2, 1, datetime('now'), datetime('now')),
+  (23, 'gear_chest_rare', 'Rare Gear Chest', 'Opens into a random rare piece (6 slots). Reforge with gold.', 'equipment', '{"gear_chest":true,"rarity":"rare"}', 3, 1, datetime('now'), datetime('now')),
+  (24, 'gear_chest_epic', 'Epic Gear Chest', 'Opens into a random epic piece (6 slots). Reforge with gold.', 'equipment', '{"gear_chest":true,"rarity":"epic"}', 3, 1, datetime('now'), datetime('now')),
+  (25, 'gear_chest_legendary', 'Legendary Gear Chest', 'Opens into a random legendary piece (6 slots). Reforge with gold.', 'equipment', '{"gear_chest":true,"rarity":"legendary"}', 4, 1, datetime('now'), datetime('now')),
+  (26, 'substat_changer', 'Substat Changer', 'Rerolls one gear substat type (keeps level). Extremely rare stock.', 'gear_tool', '{"gear":"change_substat"}', 4, 1, datetime('now'), datetime('now'));
 
 -- Shop price catalog (application reads seedData.shopListings; SQL mirror for docs)
--- 22 listings: 2@180, 3@420, 4@780, 5@180, 6@420, 7@780, 8@180, 9@420, 10@780, 11@180, 12@420, 13@780, 14@180, 15@420, 16@780, 17@40, 18@95, 19@55, 20@110, 21@200, 22@200, 23@450
+-- 25 listings: 2@180, 3@420, 4@780, 5@180, 6@420, 7@780, 8@180, 9@420, 10@780, 11@180, 12@420, 13@780, 14@180, 15@420, 16@780, 17@40, 18@95, 19@55, 20@110, 21@180, 22@520, 23@1500, 24@4200, 25@12500, 26@15000
 
 INSERT INTO species (id, code, display_name, blurb, glyph, element_id, stage, rarity_id, is_starter, base_scan_gain, created_at, updated_at) VALUES
   (1, 'emberkit', 'Emberkit', 'A hatchling spark of Ignis.', '🔥', 1, 1, 1, 1, 30, datetime('now'), datetime('now')),

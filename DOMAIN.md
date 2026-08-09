@@ -51,6 +51,7 @@ Cross-context references use IDs only (no shared mutable state).
 | Requirement | Data-driven gate on a path | `evolution_requirements` |
 | Zone | Explore location with weighted spawns | `zones` / `zone_encounters` |
 | Battle | Combat aggregate for one encounter | `battles` |
+| Gear | Equippable piece with main + up to 4 subs | `player_gear` |
 
 ## Evolution (Digimon-style)
 
@@ -72,8 +73,17 @@ Cross-context references use IDs only (no shared mutable state).
 
 1. Creatures (and wilds) have **level 1–100**. Wilds scale with your active creature.
 2. Wild victories grant XP; each level-up raises Attack/Speed/Defense/Mana by **+1** and Health by **+2**.
-3. Shop aisles: **Training** (expensive permanent boosts), **Items** (battle consumables), **Equipment** (stub).
+3. Shop aisles: **Training** (expensive permanent boosts), **Items** (battle consumables), **Equipment** (gear chests + Substat Changer).
 4. Evolution paths mix **level + stat** (and Apex Seal on final forms).
+
+## Gear (Outerplane-inspired)
+
+1. Six slots: **Weapon** (Atk/HP/Def main), **Accessory** (Spd/Crit%/CritDmg), **Helmet** (HP), **Chestplate** (Def), **Gloves** (Effectiveness + fixed Def sub), **Boots** (Resilience + fixed HP sub).
+2. Up to **4 random substats**, never duplicating main or fixed sub.
+3. **Rarity** (common → legendary) sets base main/sub values — no enhance/breakthrough.
+4. **Reforge** costs gold only: fill empty sub lines, then upgrade existing lines (max level 6).
+5. **Substat Changer** (shop, very expensive) rerolls one substat type and keeps its level.
+6. Equipped bonuses feed combat (crit, pierce via effectiveness vs resilience).
 
 
 ## Data-driven rule interpreters

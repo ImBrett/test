@@ -1309,6 +1309,126 @@ img {
   padding: 40px 24px;
 }
 
+/* ——— Gear ——— */
+.gear-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 14px 0 10px;
+}
+
+.gear-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(30, 52, 42, 0.55), rgba(12, 22, 18, 0.4));
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.gear-slot.filled {
+  border-color: rgba(120, 180, 140, 0.35);
+}
+
+.gear-slot-glyph {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.gear-slot-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.gear-slot-main {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.gear-glyph {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 8px;
+  display: grid;
+  place-items: center;
+  font-size: 1.8rem;
+  border-radius: 18px;
+  background: rgba(40, 70, 55, 0.55);
+  border: 1px solid var(--line);
+}
+
+.gear-stat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.gear-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+
+.gear-stat em {
+  font-style: normal;
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.gear-pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.gear-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(20, 36, 28, 0.6);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.gear-bonus {
+  color: var(--leaf);
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 8px 0 0;
+}
+
+.rarity-common { color: #b8c4b8; }
+.rarity-uncommon { color: #6dce8a; }
+.rarity-rare { color: #5eb0e8; }
+.rarity-epic { color: #c48cff; }
+.rarity-legendary { color: #f0c24b; }
+
 .hidden {
   display: none !important;
 }

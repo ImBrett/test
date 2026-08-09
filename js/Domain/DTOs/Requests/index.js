@@ -183,3 +183,67 @@ export class UseBattleItemRequest {
     assertValid(errors);
   }
 }
+
+export class EquipGearRequest {
+  constructor(raw) {
+    this.gearId = Number(raw?.gearId);
+    this.creatureId = Number(raw?.creatureId);
+  }
+  static from(raw) {
+    const dto = new EquipGearRequest(raw);
+    dto.validate();
+    return dto;
+  }
+  validate() {
+    assertValid([
+      ...requireInt(this.gearId, "gearId", { min: 1 }),
+      ...requireInt(this.creatureId, "creatureId", { min: 1 }),
+    ]);
+  }
+}
+
+export class UnequipGearRequest {
+  constructor(raw) {
+    this.gearId = Number(raw?.gearId);
+  }
+  static from(raw) {
+    const dto = new UnequipGearRequest(raw);
+    dto.validate();
+    return dto;
+  }
+  validate() {
+    assertValid(requireInt(this.gearId, "gearId", { min: 1 }));
+  }
+}
+
+export class ReforgeGearRequest {
+  constructor(raw) {
+    this.gearId = Number(raw?.gearId);
+  }
+  static from(raw) {
+    const dto = new ReforgeGearRequest(raw);
+    dto.validate();
+    return dto;
+  }
+  validate() {
+    assertValid(requireInt(this.gearId, "gearId", { min: 1 }));
+  }
+}
+
+export class ChangeGearSubstatRequest {
+  constructor(raw) {
+    this.gearId = Number(raw?.gearId);
+    this.subIndex = Number(raw?.subIndex);
+  }
+  static from(raw) {
+    const dto = new ChangeGearSubstatRequest(raw);
+    dto.validate();
+    return dto;
+  }
+  validate() {
+    assertValid([
+      ...requireInt(this.gearId, "gearId", { min: 1 }),
+      ...requireInt(this.subIndex, "subIndex", { min: 0 }),
+    ]);
+  }
+}

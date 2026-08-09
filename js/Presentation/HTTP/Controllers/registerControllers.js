@@ -13,6 +13,7 @@ export function registerControllers(bus, services) {
     battleService,
     scanService,
     shopService,
+    gearService,
   } = services;
 
   bus.on(AppEvents.CREATE_PLAYER, (e) => playerService.createPlayer(e.payload));
@@ -29,6 +30,10 @@ export function registerControllers(bus, services) {
   bus.on(AppEvents.USE_BATTLE_ITEM, (e) => battleService.useItem(e.payload));
   bus.on(AppEvents.CLAIM_SCAN, (e) => scanService.claim(e.payload));
   bus.on(AppEvents.BUY_SHOP_ITEM, (e) => shopService.buy(e.payload));
+  bus.on(AppEvents.EQUIP_GEAR, (e) => gearService.equip(e.payload));
+  bus.on(AppEvents.UNEQUIP_GEAR, (e) => gearService.unequip(e.payload));
+  bus.on(AppEvents.REFORGE_GEAR, (e) => gearService.reforge(e.payload));
+  bus.on(AppEvents.CHANGE_GEAR_SUBSTAT, (e) => gearService.changeSubstat(e.payload));
 
   return bus;
 }

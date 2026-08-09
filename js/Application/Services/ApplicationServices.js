@@ -16,11 +16,16 @@ import {
   ClaimScanRequest,
   BuyShopItemRequest,
   UseBattleItemRequest,
+  EquipGearRequest,
+  UnequipGearRequest,
+  ReforgeGearRequest,
+  ChangeGearSubstatRequest,
 } from "../../Domain/DTOs/Requests/index.js";
 import {
   toCreatureDto,
   toAppStateDto,
   toInventoryDto,
+  toGearPieceDto,
   toBattleSessionDto,
   toScanDto,
   toShopListingDto,
@@ -57,13 +62,22 @@ export function createApplicationServices(deps) {
       claimScannedSpecies,
       buyShopItem,
       useBattleItem,
+      equipGear,
+      unequipGear,
+      reforgeGear,
+      changeGearSubstat,
     },
   } = deps;
 
   function enrichedParty() {
     return uow.listCreatures().map((c) =>
-      toCreatureDto(enrichCreature(catalog, uow, evaluators, c))
+      toCreatureDto(enrichCreature(catalog, uow, evaluators, c), catalog)
     );
+  }
+
+  function gearEntries() {
+    if (typeof uow.listGear !== "function") return [];
+    return uow.listGear().map((g) => toGearPieceDto(g, catalog));
   }
 
   function scanEntries() {
@@ -80,6 +94,7 @@ export function createApplicationServices(deps) {
       resources: uow.getResources(),
       creatures: enrichedParty(),
       inventory: toInventoryDto(uow.listInventory(), catalog),
+      gear: gearEntries(),
       scans: scanEntries(),
       shop: catalog.shopListings().map(toShopListingDto),
       catalog,
@@ -224,6 +239,33 @@ export function createApplicationServices(deps) {
     }),
   };
 
+  const gearService = {
+    equip: guard((raw) => {
+      const req = EquipGearRequest.from(raw);
+      const result = equipGear.execute(req);
+      if (!result.ok) return result;
+      return ok({ equip: result.data, state: getAppState() });
+    }),
+    unequip: guard((raw) => {
+      const req = UnequipGearRequest.from(raw);
+      const result = unequipGear.execute(req);
+      if (!result.ok) return result;
+      return ok({ unequip: result.data, state: getAppState() });
+    }),
+    reforge: guard((raw) => {
+      const req = ReforgeGearRequest.from(raw);
+      const result = reforgeGear.execute(req);
+      if (!result.ok) return result;
+      return ok({ reforge: result.data, state: getAppState() });
+    }),
+    changeSubstat: guard((raw) => {
+      const req = ChangeGearSubstatRequest.from(raw);
+      const result = changeGearSubstat.execute(req);
+      if (!result.ok) return result;
+      return ok({ change: result.data, state: getAppState() });
+    }),
+  };
+
   return {
     playerService,
     partyService,
@@ -232,6 +274,7 @@ export function createApplicationServices(deps) {
     battleService,
     scanService,
     shopService,
+    gearService,
     getAppState,
   };
 }

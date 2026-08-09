@@ -1,5 +1,15 @@
 /** Response / view DTOs — enrich domain rows for any presentation. */
 
+import {
+  GEAR_SLOTS,
+  gearDisplayName,
+  rarityLabel,
+  reforgeCost,
+  slotGlyph,
+  slotLabel,
+  sumGearBonuses,
+} from "../../Rules/GearRules.js";
+
 export function toStatDto(row) {
   return {
     statId: row.stat_id,
@@ -8,6 +18,46 @@ export function toStatDto(row) {
     description: row.stat.description,
     color: row.stat.color,
     value: row.value,
+  };
+}
+
+function statMeta(catalog, code) {
+  const stat = (catalog?.stats || []).find((s) => s.code === code);
+  return {
+    code,
+    name: stat?.display_name || code,
+    color: stat?.color || "#9ab",
+  };
+}
+
+export function toGearPieceDto(piece, catalog) {
+  if (!piece) return null;
+  return {
+    id: piece.id,
+    slot: piece.slot,
+    slotLabel: slotLabel(piece.slot),
+    glyph: slotGlyph(piece.slot),
+    rarity: piece.rarity,
+    rarityLabel: rarityLabel(piece.rarity),
+    displayName: gearDisplayName(piece),
+    mainStat: {
+      ...statMeta(catalog, piece.main_stat_code),
+      value: piece.main_stat_value,
+    },
+    fixedSubStat: piece.fixed_sub_code
+      ? {
+          ...statMeta(catalog, piece.fixed_sub_code),
+          value: piece.fixed_sub_value,
+        }
+      : null,
+    subStats: (piece.sub_stats || []).map((s) => ({
+      ...statMeta(catalog, s.code),
+      value: s.value,
+      level: s.level,
+    })),
+    reforgeCount: piece.reforge_count || 0,
+    reforgeCost: reforgeCost(piece),
+    equippedCreatureId: piece.equipped_creature_id ?? null,
   };
 }
 
@@ -45,9 +95,15 @@ function toTreeDto(node, currentSpeciesId, lineageSet) {
   };
 }
 
-export function toCreatureDto(enriched) {
+export function toCreatureDto(enriched, catalog = null) {
   const evo = enriched.evo;
   const lineageSet = new Set((evo?.lineage || [enriched.species.id]).map(Number));
+  const gearBonuses = enriched.gearBonuses || sumGearBonuses([]);
+  const equipped = {};
+  for (const slot of GEAR_SLOTS) {
+    const piece = enriched.equippedGear?.[slot] || null;
+    equipped[slot] = piece ? toGearPieceDto(piece, catalog) : null;
+  }
   return {
     id: enriched.id,
     nickname: enriched.nickname,
@@ -72,6 +128,8 @@ export function toCreatureDto(enriched) {
       elementId: enriched.species.element_id,
     },
     stats: enriched.stats.map(toStatDto),
+    gearBonuses,
+    equippedGear: equipped,
     moves: (enriched.moves || []).map((m) => ({
       slot: m.slot,
       moveId: m.move_id,
@@ -131,6 +189,7 @@ export function toPlayerDto(player, resources) {
 
 export function toShopListingDto(listing) {
   const item = listing.item;
+  const payload = item.effect_payload || {};
   return {
     itemId: listing.item_id,
     price: listing.price,
@@ -140,8 +199,11 @@ export function toShopListingDto(listing) {
     name: item.display_name,
     description: item.description,
     kind: item.item_kind,
-    gain: item.effect_payload?.gain ?? 0,
-    statId: item.effect_payload?.stat_id ?? null,
+    gain: payload.gain ?? 0,
+    statId: payload.stat_id ?? null,
+    gearRarity: payload.rarity ?? null,
+    isGearChest: !!payload.gear_chest,
+    isSubstatChanger: payload.gear === "change_substat",
   };
 }
 
@@ -195,6 +257,7 @@ export function toAppStateDto({
   resources,
   creatures,
   inventory,
+  gear = [],
   scans = [],
   shop = [],
   catalog,
@@ -206,6 +269,12 @@ export function toAppStateDto({
     party: creatures,
     activeCreatureId: active?.id ?? null,
     inventory,
+    gear,
+    gearSlots: GEAR_SLOTS.map((slot) => ({
+      id: slot,
+      label: slotLabel(slot),
+      glyph: slotGlyph(slot),
+    })),
     scans,
     shop,
     shopCategories: (catalog.shopCategories?.() || []).map((c) => ({

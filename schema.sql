@@ -17,6 +17,7 @@ DROP TABLE IF EXISTS battle_actions;
 DROP TABLE IF EXISTS battle_participants;
 DROP TABLE IF EXISTS battles;
 DROP TABLE IF EXISTS player_species_scans;
+DROP TABLE IF EXISTS player_gear;
 DROP TABLE IF EXISTS player_inventory;
 DROP TABLE IF EXISTS player_creature_moves;
 DROP TABLE IF EXISTS player_creature_stats;
@@ -88,7 +89,7 @@ CREATE TABLE items (
   code VARCHAR(32) NOT NULL UNIQUE,
   display_name VARCHAR(48) NOT NULL,
   description VARCHAR(160) NOT NULL,
-  item_kind VARCHAR(24) NOT NULL,           -- consumable | evolution | currency_pack
+  item_kind VARCHAR(24) NOT NULL,           -- consumable | evolution | currency_pack | equipment | gear_tool | stat_boost
   effect_payload TEXT NOT NULL DEFAULT '{}', -- JSON payload for item effects
   rarity_id INTEGER,
   stackable INTEGER NOT NULL DEFAULT 1 CHECK (stackable IN (0, 1)),
@@ -312,6 +313,26 @@ CREATE TABLE player_inventory (
   FOREIGN KEY (item_id) REFERENCES items(id),
   UNIQUE (player_id, item_id)
 );
+
+-- Gear stash (Outerplane-style). Main/fixed values by rarity; up to 4 random subs.
+CREATE TABLE player_gear (
+  id INTEGER PRIMARY KEY NOT NULL,
+  player_id INTEGER NOT NULL,
+  slot VARCHAR(16) NOT NULL,                 -- weapon | accessory | helmet | chestplate | gloves | boots
+  rarity VARCHAR(16) NOT NULL,               -- common | uncommon | rare | epic | legendary
+  main_stat_code VARCHAR(16) NOT NULL,
+  main_stat_value INTEGER NOT NULL CHECK (main_stat_value >= 0),
+  fixed_sub_code VARCHAR(16),               -- gloves: defense; boots: health
+  fixed_sub_value INTEGER,
+  sub_stats_json TEXT NOT NULL DEFAULT '[]', -- [{code, value, level}] max 4
+  reforge_count INTEGER NOT NULL DEFAULT 0,
+  equipped_creature_id INTEGER,
+  FOREIGN KEY (player_id) REFERENCES players(id),
+  FOREIGN KEY (equipped_creature_id) REFERENCES player_creatures(id)
+);
+
+CREATE INDEX idx_player_gear_player ON player_gear(player_id);
+CREATE INDEX idx_player_gear_equipped ON player_gear(equipped_creature_id);
 
 
 -- =============================================================================

@@ -1,14 +1,17 @@
 import { ok, fail } from "../../Domain/DTOs/Result.js";
 import { appendEvent } from "../../Domain/Rules/CreatureEnricher.js";
 import { DomainEventTypes } from "../../Domain/Events/DomainEvents.js";
+import { grantGearFromChest } from "./GearActions.js";
+import { gearDisplayName } from "../../Domain/Rules/GearRules.js";
 
 /**
  * Action: BuyShopItem
  * - training (stat_boost): spend coins, apply to creature immediately
  * - items (consumable): spend coins, add to inventory
- * - equipment: stub — not purchasable yet
+ * - equipment gear_chest: spend coins, roll gear into stash
+ * - equipment gear_tool (substat changer): spend coins, add to inventory
  */
-export function createBuyShopItemAction({ catalog, uow }) {
+export function createBuyShopItemAction({ catalog, uow, random }) {
   return {
     name: "BuyShopItem",
     execute({ itemId, creatureId = null }) {
@@ -18,7 +21,7 @@ export function createBuyShopItemAction({ catalog, uow }) {
       const listing = catalog.shopListingByItemId(itemId);
       if (!listing) return fail("NOT_FOR_SALE", "Item is not sold in the shop");
       if (listing.available === false) {
-        return fail("UNAVAILABLE", "Equipment is not available yet");
+        return fail("UNAVAILABLE", "This listing is not available");
       }
 
       const item = catalog.itemById(itemId);
@@ -30,6 +33,7 @@ export function createBuyShopItemAction({ catalog, uow }) {
       }
 
       const category = listing.category || item.shop_category;
+      const payload = item.effect_payload || {};
 
       if (category === "training" || item.item_kind === "stat_boost") {
         if (!creatureId) return fail("NO_CREATURE", "Pick a party member first");
@@ -37,8 +41,8 @@ export function createBuyShopItemAction({ catalog, uow }) {
         if (!creature || creature.player_id !== player.id) {
           return fail("NOT_FOUND", "Creature not found");
         }
-        const statId = item.effect_payload?.stat_id;
-        const gain = item.effect_payload?.gain || 1;
+        const statId = payload.stat_id;
+        const gain = payload.gain || 1;
         const row = uow.statsForCreature(creatureId).find((s) => s.stat_id === statId);
         if (!row) return fail("MISSING_STAT", "Stat row missing");
 
@@ -81,7 +85,62 @@ export function createBuyShopItemAction({ catalog, uow }) {
         });
       }
 
-      return fail("UNAVAILABLE", "Equipment is not available yet");
+      if (category === "equipment" || item.item_kind === "equipment" || item.item_kind === "gear_tool") {
+        if (payload.gear_chest && payload.rarity) {
+          if (!random) return fail("RANDOM", "Random port required for gear chests");
+          resources.coins -= listing.price;
+          const gear = grantGearFromChest({
+            uow,
+            random,
+            rarity: payload.rarity,
+            slot: payload.slot || null,
+          });
+          appendEvent(uow, player.id, "PlayerGear", gear.id, "GearChestOpened", {
+            item_id: itemId,
+            rarity: payload.rarity,
+            slot: gear.slot,
+            price: listing.price,
+          });
+          uow.commit();
+          return ok({
+            kind: "gear_chest",
+            itemId,
+            name: item.display_name,
+            price: listing.price,
+            coins: resources.coins,
+            gear: {
+              id: gear.id,
+              slot: gear.slot,
+              rarity: gear.rarity,
+              displayName: gearDisplayName(gear),
+              mainStatCode: gear.main_stat_code,
+              mainStatValue: gear.main_stat_value,
+            },
+          });
+        }
+
+        if (payload.gear === "change_substat" || item.item_kind === "gear_tool") {
+          resources.coins -= listing.price;
+          uow.addInventory(itemId, 1);
+          appendEvent(uow, player.id, "Player", player.id, "ItemPurchased", {
+            item_id: itemId,
+            price: listing.price,
+          });
+          uow.commit();
+          return ok({
+            kind: "gear_tool",
+            itemId,
+            name: item.display_name,
+            price: listing.price,
+            quantity: uow.inventoryQty(itemId),
+            coins: resources.coins,
+          });
+        }
+
+        return fail("UNAVAILABLE", "Unknown equipment listing");
+      }
+
+      return fail("UNAVAILABLE", "Item cannot be purchased");
     },
   };
 }

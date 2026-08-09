@@ -1,5 +1,6 @@
-const SAVE_KEY = "morph_rpg_v8";
+const SAVE_KEY = "morph_rpg_v9";
 const LEGACY_KEYS = [
+  "morph_rpg_v8",
   "morph_rpg_v7",
   "morph_rpg_v6",
   "morph_rpg_v5",
@@ -18,6 +19,7 @@ export function emptyState() {
     player_creature_moves: [],
     player_party_slots: [],
     player_inventory: [],
+    player_gear: [],
     player_species_scans: [],
     battles: [],
     battle_participants: [],
@@ -30,6 +32,7 @@ export function emptyState() {
       player_creature_moves: 1,
       player_party_slots: 1,
       player_inventory: 1,
+      player_gear: 1,
       player_species_scans: 1,
       battles: 1,
       battle_participants: 1,
@@ -54,7 +57,13 @@ export function createMemoryUnitOfWork(storage = globalThis.localStorage) {
         state = emptyState();
         return;
       }
-      state = { ...emptyState(), ...JSON.parse(raw) };
+      const parsed = JSON.parse(raw);
+      state = { ...emptyState(), ...parsed };
+      if (!Array.isArray(state.player_gear)) state.player_gear = [];
+      if (!state.nextIds.player_gear) state.nextIds.player_gear = 1;
+      for (const g of state.player_gear) {
+        if (!Array.isArray(g.sub_stats)) g.sub_stats = [];
+      }
     } catch {
       state = emptyState();
     }
@@ -94,6 +103,25 @@ export function createMemoryUnitOfWork(storage = globalThis.localStorage) {
     listInventory: () => {
       const p = player();
       return p ? state.player_inventory.filter((i) => i.player_id === p.id) : [];
+    },
+    listGear: () => {
+      const p = player();
+      return p ? state.player_gear.filter((g) => g.player_id === p.id) : [];
+    },
+    getGear: (id) => state.player_gear.find((g) => g.id === id),
+    gearForCreature: (creatureId) =>
+      state.player_gear.filter((g) => g.equipped_creature_id === creatureId),
+    insertGear: (row) => {
+      const id = state.nextIds.player_gear++;
+      const gear = {
+        ...row,
+        id,
+        sub_stats: Array.isArray(row.sub_stats) ? row.sub_stats.map((s) => ({ ...s })) : [],
+        reforge_count: row.reforge_count || 0,
+        equipped_creature_id: row.equipped_creature_id ?? null,
+      };
+      state.player_gear.push(gear);
+      return gear;
     },
     listScans: () => {
       const p = player();

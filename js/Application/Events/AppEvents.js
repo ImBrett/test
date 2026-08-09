@@ -11,5 +11,9 @@ export const AppEvents = Object.freeze({
   CLAIM_SCAN: "scan.claim",
   BUY_SHOP_ITEM: "shop.buy",
   USE_BATTLE_ITEM: "battle.useItem",
+  EQUIP_GEAR: "gear.equip",
+  UNEQUIP_GEAR: "gear.unequip",
+  REFORGE_GEAR: "gear.reforge",
+  CHANGE_GEAR_SUBSTAT: "gear.changeSubstat",
   REFRESH_STATE: "app.refresh",
 });

@@ -40,10 +40,10 @@ export const stats = [
   { id: 3, code: "speed", display_name: "Speed", description: "Turn order priority", color: "#4DB8E8", combat_role: "speed", trainable: 1 },
   { id: 4, code: "defense", display_name: "Defense", description: "Damage reduction", color: "#C4A35A", combat_role: "defense", trainable: 1 },
   { id: 5, code: "mana", display_name: "Mana", description: "Special force & spell power", color: "#5EC8C0", combat_role: "special", trainable: 1 },
-  { id: 6, code: "crit_chance", display_name: "Crit Chance", description: "Chance to land critical hits (gear later)", color: "#F0C24B", combat_role: "crit", trainable: 0 },
-  { id: 7, code: "crit_damage", display_name: "Crit Damage", description: "Critical hit multiplier (gear later)", color: "#F08A4B", combat_role: "crit", trainable: 0 },
-  { id: 8, code: "effectiveness", display_name: "Effectiveness", description: "Chance to land attack extras", color: "#B07CFF", combat_role: "status", trainable: 0 },
-  { id: 9, code: "resilience", display_name: "Resilience", description: "Chance to resist attack extras", color: "#8AA0B8", combat_role: "status", trainable: 0 },
+  { id: 6, code: "crit_chance", display_name: "Crit Chance", description: "Chance to land critical hits (from gear)", color: "#F0C24B", combat_role: "crit", trainable: 0 },
+  { id: 7, code: "crit_damage", display_name: "Crit Damage", description: "Critical hit multiplier (from gear)", color: "#F08A4B", combat_role: "crit", trainable: 0 },
+  { id: 8, code: "effectiveness", display_name: "Effectiveness", description: "Land extras & pierce resilience (gear)", color: "#B07CFF", combat_role: "status", trainable: 0 },
+  { id: 9, code: "resilience", display_name: "Resilience", description: "Resist extras & blunt pierce (gear)", color: "#8AA0B8", combat_role: "status", trainable: 0 },
 ].map((s) => ({ ...s, name: s.display_name, desc: s.description }));
 
 export const STAGE_NAMES = Object.freeze({
@@ -179,38 +179,37 @@ addShopItem({
   price: 110,
 });
 
+/** Gear chests — open on purchase; rarity sets main/sub base values. */
+const GEAR_CHESTS = [
+  { code: "gear_chest_common", name: "Common Gear Chest", rarity: "common", rarity_id: 1, price: 180 },
+  { code: "gear_chest_uncommon", name: "Uncommon Gear Chest", rarity: "uncommon", rarity_id: 2, price: 520 },
+  { code: "gear_chest_rare", name: "Rare Gear Chest", rarity: "rare", rarity_id: 3, price: 1500 },
+  { code: "gear_chest_epic", name: "Epic Gear Chest", rarity: "epic", rarity_id: 3, price: 4200 },
+  { code: "gear_chest_legendary", name: "Legendary Gear Chest", rarity: "legendary", rarity_id: 4, price: 12500 },
+];
+
+for (const chest of GEAR_CHESTS) {
+  addShopItem({
+    code: chest.code,
+    display_name: chest.name,
+    description: `Opens into a random ${chest.rarity} piece (6 slots). Reforge with gold.`,
+    item_kind: "equipment",
+    effect_payload: { gear_chest: true, rarity: chest.rarity },
+    rarity_id: chest.rarity_id,
+    shop_category: "equipment",
+    price: chest.price,
+  });
+}
+
 addShopItem({
-  code: "ember_band",
-  display_name: "Ember Band",
-  description: "Equipment — coming soon.",
-  item_kind: "equipment",
-  effect_payload: { slot: "accessory" },
-  rarity_id: 2,
+  code: "substat_changer",
+  display_name: "Substat Changer",
+  description: "Rerolls one gear substat type (keeps level). Extremely rare stock.",
+  item_kind: "gear_tool",
+  effect_payload: { gear: "change_substat" },
+  rarity_id: 4,
   shop_category: "equipment",
-  price: 200,
-  available: false,
-});
-addShopItem({
-  code: "tide_charm",
-  display_name: "Tide Charm",
-  description: "Equipment — coming soon.",
-  item_kind: "equipment",
-  effect_payload: { slot: "accessory" },
-  rarity_id: 2,
-  shop_category: "equipment",
-  price: 200,
-  available: false,
-});
-addShopItem({
-  code: "aether_circlet",
-  display_name: "Aether Circlet",
-  description: "Equipment — coming soon.",
-  item_kind: "equipment",
-  effect_payload: { slot: "head" },
-  rarity_id: 3,
-  shop_category: "equipment",
-  price: 450,
-  available: false,
+  price: 15000,
 });
 
 export const APEX_SEAL_ITEM_ID = 1;

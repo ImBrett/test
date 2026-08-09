@@ -26,6 +26,12 @@ import {
   createBuyShopItemAction,
   createUseBattleItemAction,
 } from "../../Application/Actions/ShopActions.js";
+import {
+  createEquipGearAction,
+  createUnequipGearAction,
+  createReforgeGearAction,
+  createChangeGearSubstatAction,
+} from "../../Application/Actions/GearActions.js";
 import { createSeedCatalog } from "../Catalog/SeedCatalog.js";
 import { createMemoryUnitOfWork } from "../Persistence/Memory/MemoryUnitOfWork.js";
 import { createSystemClock } from "../Clock/SystemClock.js";
@@ -74,8 +80,12 @@ export function createApplication(options = {}) {
       uow,
       obtainCreature,
     }),
-    buyShopItem: createBuyShopItemAction({ catalog, uow }),
+    buyShopItem: createBuyShopItemAction({ catalog, uow, random }),
     useBattleItem: createUseBattleItemAction({ catalog, uow }),
+    equipGear: createEquipGearAction({ uow }),
+    unequipGear: createUnequipGearAction({ uow }),
+    reforgeGear: createReforgeGearAction({ uow, random }),
+    changeGearSubstat: createChangeGearSubstatAction({ catalog, uow, random }),
   };
 
   const services = createApplicationServices({

@@ -15,7 +15,7 @@ function createMemoryStorage() {
 }
 
 async function main() {
-  const { bus, services } = createApplication({ storage: createMemoryStorage() });
+  const { bus, services, uow } = createApplication({ storage: createMemoryStorage() });
   const emit = async (type, payload) => (await bus.emit(type, payload))[0];
 
   let res = await emit(AppEvents.CREATE_PLAYER, { name: "TerminalHero" });
@@ -27,6 +27,21 @@ async function main() {
   const salve = res.data.shop.find((s) => s.code === "field_salve");
   res = await emit(AppEvents.BUY_SHOP_ITEM, { itemId: salve.itemId });
   console.log("shop →", res.data.purchase.name, "×", res.data.purchase.quantity);
+
+  // Gear smoke: fund wallet, buy chest, equip, reforge
+  uow.getResources().coins += 5000;
+  uow.commit();
+  const chest = services.getAppState().shop.find((s) => s.code === "gear_chest_common");
+  res = await emit(AppEvents.BUY_SHOP_ITEM, { itemId: chest.itemId });
+  const gear = res.data.purchase.gear;
+  console.log("chest →", gear.displayName, gear.slot, gear.mainStatCode, "+", gear.mainStatValue);
+
+  const creatureId = services.getAppState().party[0].id;
+  res = await emit(AppEvents.EQUIP_GEAR, { gearId: gear.id, creatureId });
+  console.log("equip →", res.data.equip.slot);
+
+  res = await emit(AppEvents.REFORGE_GEAR, { gearId: gear.id });
+  console.log("reforge →", res.data.reforge.outcome, res.data.reforge.changed);
 
   res = await emit(AppEvents.EXPLORE_ZONE, { zoneCode: "cinderwaste" });
   console.log(
@@ -53,6 +68,8 @@ async function main() {
   const st = services.getAppState();
   console.log("party level →", st.party[0].level, "xp", st.party[0].experience);
   console.log("attack →", st.party[0].stats.find((s) => s.code === "attack")?.value);
+  console.log("gear bonus atk →", st.party[0].gearBonuses?.attack || 0);
+  console.log("gear pieces →", st.gear.length);
   console.log("scans →", st.scans.length);
   console.log("OK");
 }

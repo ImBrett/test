@@ -1,26 +1,28 @@
 export function combatPower(enriched) {
   const map = Object.fromEntries(enriched.stats.map((s) => [s.stat_id, s.value]));
-  const attack = map[1] || 0;
-  const health = map[2] || 0;
-  const speed = map[3] || 0;
-  const defense = map[4] || 0;
+  const gear = enriched.gearBonuses || {};
+  const attack = (map[1] || 0) + (gear.attack || 0);
+  const health = (map[2] || 0) + (gear.health || 0);
+  const speed = (map[3] || 0) + (gear.speed || 0);
+  const defense = (map[4] || 0) + (gear.defense || 0);
   const mana = map[5] || 0;
-  const critChance = map[6] || 0;
-  const critDamage = map[7] || 0;
-  const effectiveness = map[8] || 0;
-  const resilience = map[9] || 0;
+  const critChance = (map[6] || 0) + (gear.crit_chance || 0);
+  const critDamage = (map[7] || 0) + (gear.crit_damage || 0);
+  const effectiveness = (map[8] || 0) + (gear.effectiveness || 0);
+  const resilience = (map[9] || 0) + (gear.resilience || 0);
   return {
     hp: 48 + health * 5 + defense * 2,
     atk: 8 + attack * 2 + Math.floor(mana * 0.6),
     spd: 5 + speed,
     def: 3 + Math.floor(defense * 1.3),
-    crit: Math.min(45, 4 + critChance + Math.floor(speed * 0.3)),
+    crit: Math.min(55, 4 + critChance + Math.floor(speed * 0.3)),
     critMult: 1.5 + critDamage * 0.02,
     effectiveness,
     resilience,
     mana,
     element_id: enriched.species?.element_id,
     map,
+    gear,
   };
 }
 
@@ -65,7 +67,14 @@ export function createMoveResolvers({ catalog, random }) {
     mult *= matchup;
     const crit = random.next() * 100 < attacker.crit + (payload.crit_bonus || 0);
     if (crit) mult *= attacker.critMult || 1.6;
-    const raw = attacker.atk * mult * (move.power / 100);
+    const pierce = Math.max(
+      -0.25,
+      Math.min(
+        0.35,
+        ((attacker.effectiveness || 0) - (defender.resilience || 0)) * 0.003
+      )
+    );
+    const raw = attacker.atk * mult * (move.power / 100) * (1 + pierce);
     const mitigated = Math.max(
       1,
       Math.round(raw - defender.def * (defender._guarding ? 1.8 : 1))

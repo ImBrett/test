@@ -15,6 +15,10 @@
  * @property {() => object[]} listCreatureMoves
  * @property {(creatureId: number) => object[]} movesForCreature
  * @property {() => object[]} listInventory
+ * @property {() => object[]} listGear
+ * @property {(id: number) => object|undefined} getGear
+ * @property {(creatureId: number) => object[]} gearForCreature
+ * @property {(row: object) => object} insertGear
  * @property {(itemId: number) => number} inventoryQty
  * @property {(itemId: number, qty?: number) => void} addInventory
  * @property {(itemId: number, qty?: number) => boolean} consumeInventory
