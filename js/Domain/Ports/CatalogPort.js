@@ -19,7 +19,9 @@
  * @property {(rootSpeciesId: number) => object} buildEvolutionTree
  * @property {(pathId: number) => object|undefined} pathById
  * @property {(pathId: number) => object[]} requirementsForPath
- * @property {(statId: number) => object|undefined} drillForStat
+ * @property {(itemId: number) => object|undefined} shopListingByItemId
+ * @property {() => object[]} shopCategories
+ * @property {(category?: string|null) => object[]} shopListings
  * @property {(zoneId: number) => object[]} encountersForZone
  * @property {(codeOrKind: string) => object} moveByCodeOrKind
  * @property {object[]} stats
@@ -27,7 +29,6 @@
  * @property {object[]} species
  * @property {object[]} items
  * @property {object[]} moves
- * @property {object[]} training_drills
  */
 
 export {};

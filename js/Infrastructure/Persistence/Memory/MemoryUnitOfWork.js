@@ -1,5 +1,13 @@
-const SAVE_KEY = "morph_rpg_v7";
-const LEGACY_KEYS = ["morph_rpg_v6", "morph_rpg_v5", "morph_rpg_v4", "morph_rpg_v3", "morph_rpg_v2", "morph_rpg_v1"];
+const SAVE_KEY = "morph_rpg_v8";
+const LEGACY_KEYS = [
+  "morph_rpg_v7",
+  "morph_rpg_v6",
+  "morph_rpg_v5",
+  "morph_rpg_v4",
+  "morph_rpg_v3",
+  "morph_rpg_v2",
+  "morph_rpg_v1",
+];
 
 export function emptyState() {
   return {

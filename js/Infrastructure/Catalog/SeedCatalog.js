@@ -80,7 +80,6 @@ export function createSeedCatalog(clock) {
     buildEvolutionTree,
     requirementsForPath: (pathId) =>
       seed.evolutionRequirements.filter((r) => r.evolution_path_id === pathId),
-    drillForStat: (statId) => seed.trainingDrills.find((d) => d.stat_id === statId),
     shopListingByItemId: (itemId) =>
       seed.shopListings.find((l) => l.item_id === itemId),
     shopCategories: () => seed.SHOP_CATEGORIES,
@@ -103,7 +102,6 @@ export function createSeedCatalog(clock) {
     species: seed.species,
     items: seed.items,
     moves: seed.moves,
-    training_drills: seed.trainingDrills,
     evolution_paths: seed.evolutionPaths,
   };
 }

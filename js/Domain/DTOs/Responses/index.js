@@ -151,7 +151,6 @@ export function toZoneDto(zone) {
     code: zone.code,
     name: zone.display_name,
     vibe: zone.vibe,
-    energyCost: zone.energy_cost,
   };
 }
 

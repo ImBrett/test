@@ -26,9 +26,6 @@ export function enrichCreature(catalog, uow, evaluators, creature) {
   };
 }
 
-/** @deprecated Energy system removed. */
-export function regenEnergy() {}
-
 export function appendEvent(uow, playerId, aggregateType, aggregateId, eventType, payload = {}) {
   raiseDomainEvent(uow, {
     playerId,

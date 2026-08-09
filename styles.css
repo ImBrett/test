@@ -392,9 +392,6 @@ img {
   border-radius: 50%;
 }
 
-.meter.energy .dot {
-  background: var(--leaf);
-}
 .meter.coins .dot {
   background: var(--ember);
 }

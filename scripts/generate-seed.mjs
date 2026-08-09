@@ -80,12 +80,12 @@ lines.push(
 );
 lines.push("");
 
-lines.push("INSERT INTO moves (id, code, display_name, description, element_id, effect_kind, power, accuracy, energy_cost, effect_payload, created_at, updated_at) VALUES");
+lines.push("INSERT INTO moves (id, code, display_name, description, element_id, effect_kind, power, accuracy, effect_payload, created_at, updated_at) VALUES");
 lines.push(
   seed.moves
     .map(
       (m) =>
-        `  (${m.id}, ${q(m.code)}, ${q(m.display_name)}, ${q(m.description)}, ${m.element_id == null ? "NULL" : m.element_id}, ${q(m.effect_kind)}, ${m.power}, ${m.accuracy}, ${m.energy_cost}, ${q(JSON.stringify(m.effect_payload || {}))}, ${now}, ${now})`
+        `  (${m.id}, ${q(m.code)}, ${q(m.display_name)}, ${q(m.description)}, ${m.element_id == null ? "NULL" : m.element_id}, ${q(m.effect_kind)}, ${m.power}, ${m.accuracy}, ${q(JSON.stringify(m.effect_payload || {}))}, ${now}, ${now})`
     )
     .join(",\n") + ";"
 );
@@ -121,12 +121,12 @@ lines.push(
 );
 lines.push("");
 
-lines.push("INSERT INTO zones (id, code, display_name, vibe, energy_cost, min_player_level, created_at, updated_at) VALUES");
+lines.push("INSERT INTO zones (id, code, display_name, vibe, min_player_level, created_at, updated_at) VALUES");
 lines.push(
   seed.zones
     .map(
       (z) =>
-        `  (${z.id}, ${q(z.code)}, ${q(z.display_name)}, ${q(z.vibe)}, ${z.energy_cost}, ${z.min_player_level}, ${now}, ${now})`
+        `  (${z.id}, ${q(z.code)}, ${q(z.display_name)}, ${q(z.vibe)}, ${z.min_player_level}, ${now}, ${now})`
     )
     .join(",\n") + ";"
 );
@@ -138,17 +138,6 @@ lines.push(
     .map(
       (e) =>
         `  (${e.id}, ${e.zone_id}, ${e.species_id}, ${e.weight}, ${e.min_stage}, ${e.max_stage}, ${e.stat_variance_min}, ${e.stat_variance_max})`
-    )
-    .join(",\n") + ";"
-);
-lines.push("");
-
-lines.push("INSERT INTO training_drills (id, code, display_name, description, stat_id, energy_cost, base_gain, critical_chance, critical_bonus, coin_reward) VALUES");
-lines.push(
-  seed.trainingDrills
-    .map(
-      (d) =>
-        `  (${d.id}, ${q(d.code)}, ${q(d.display_name)}, ${q(d.description)}, ${d.stat_id}, ${d.energy_cost}, ${d.base_gain}, ${d.critical_chance}, ${d.critical_bonus}, ${d.coin_reward})`
     )
     .join(",\n") + ";"
 );

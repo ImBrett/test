@@ -1,9 +1,7 @@
 /** Domain event type vocabulary (Ledger BC). */
 export const DomainEventTypes = Object.freeze({
   PLAYER_CREATED: "PlayerCreated",
-  PLAYER_RESTED: "PlayerRested",
   CREATURE_OBTAINED: "CreatureObtained",
-  CREATURE_TRAINED: "CreatureTrained",
   CREATURE_EVOLVED: "CreatureEvolved",
   CREATURE_DEVOLVED: "CreatureDevolved",
   CREATURE_CAUGHT: "CreatureCaught",

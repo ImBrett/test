@@ -25,7 +25,6 @@ DROP TABLE IF EXISTS player_creatures;
 DROP TABLE IF EXISTS player_resources;
 DROP TABLE IF EXISTS players;
 
-DROP TABLE IF EXISTS training_drills;
 DROP TABLE IF EXISTS zone_encounters;
 DROP TABLE IF EXISTS zones;
 DROP TABLE IF EXISTS evolution_requirements;
@@ -136,7 +135,6 @@ CREATE TABLE moves (
   effect_kind VARCHAR(24) NOT NULL,         -- strike | guard | burst | heal | buff | debuff
   power INTEGER NOT NULL DEFAULT 0,
   accuracy REAL NOT NULL DEFAULT 1.0 CHECK (accuracy > 0 AND accuracy <= 1),
-  energy_cost INTEGER NOT NULL DEFAULT 0,
   effect_payload TEXT NOT NULL DEFAULT '{}', -- JSON for multipliers, buff targets, etc.
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
@@ -198,7 +196,6 @@ CREATE TABLE zones (
   code VARCHAR(32) NOT NULL UNIQUE,
   display_name VARCHAR(48) NOT NULL,
   vibe VARCHAR(160) NOT NULL,
-  energy_cost INTEGER NOT NULL DEFAULT 2 CHECK (energy_cost >= 0),
   min_player_level INTEGER NOT NULL DEFAULT 1,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL
@@ -220,21 +217,6 @@ CREATE TABLE zone_encounters (
   CHECK (min_stage <= max_stage)
 );
 
--- Training catalog: each drill targets a stat and costs energy.
-CREATE TABLE training_drills (
-  id INTEGER PRIMARY KEY NOT NULL,
-  code VARCHAR(32) NOT NULL UNIQUE,
-  display_name VARCHAR(48) NOT NULL,
-  description VARCHAR(160) NOT NULL,
-  stat_id INTEGER NOT NULL,
-  energy_cost INTEGER NOT NULL DEFAULT 1 CHECK (energy_cost >= 0),
-  base_gain INTEGER NOT NULL DEFAULT 1 CHECK (base_gain >= 0),
-  critical_chance REAL NOT NULL DEFAULT 0.18,
-  critical_bonus INTEGER NOT NULL DEFAULT 1,
-  coin_reward INTEGER NOT NULL DEFAULT 1,
-  FOREIGN KEY (stat_id) REFERENCES stats(id)
-);
-
 
 -- =============================================================================
 -- PLAYER CONTEXT
@@ -251,14 +233,10 @@ CREATE TABLE players (
   updated_at DATETIME NOT NULL
 );
 
--- Resources as first-class state (was ad-hoc meta blob).
+-- Wallet (coins).
 CREATE TABLE player_resources (
   player_id INTEGER PRIMARY KEY NOT NULL,
-  energy INTEGER NOT NULL DEFAULT 20 CHECK (energy >= 0),
-  energy_max INTEGER NOT NULL DEFAULT 20 CHECK (energy_max > 0),
   coins INTEGER NOT NULL DEFAULT 0 CHECK (coins >= 0),
-  energy_regen_seconds INTEGER NOT NULL DEFAULT 45,
-  last_energy_at DATETIME NOT NULL,
   FOREIGN KEY (player_id) REFERENCES players(id)
 );
 

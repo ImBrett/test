@@ -19,11 +19,7 @@ export function createCreatePlayerAction({ catalog, uow, clock }) {
       );
       uow.insertResources({
         player_id: player.id,
-        energy: 0,
-        energy_max: 0,
         coins: 40,
-        energy_regen_seconds: 0,
-        last_energy_at: ts,
       });
       for (let slot = 1; slot <= 6; slot++) {
         uow.insertPartySlot({

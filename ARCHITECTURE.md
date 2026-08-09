@@ -12,12 +12,12 @@ js/
     Events/           domain event types + raise helper
     Models/           Player, Creature, Battle factories
     DTOs/             Requests (validate) · Responses (enrich)
-    ValueObjects/     Energy, Nickname, Money, StatValue
+    ValueObjects/     Nickname, Money, StatValue
     Ports/            Catalog · UnitOfWork · Clock · Random
-    Rules/            combat, evolution requirements, enrichers
+    Rules/            combat, evolution, leveling, enrichers
   Application/
     Events/           AppEvents (integration / UI commands)
-    Actions/          CreatePlayer, TrainCreature, …
+    Actions/          CreatePlayer, Battle, Shop, Scan, Evolve, …
     Services/         orchestrate actions → DTOs
   Infrastructure/
     EventBus/

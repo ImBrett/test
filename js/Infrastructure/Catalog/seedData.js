@@ -368,15 +368,15 @@ export const speciesBaseStats = Object.entries(BASE_STATS).flatMap(([speciesId, 
 );
 
 export const moves = [
-  { id: 1, code: "strike", display_name: "Strike", description: "A solid blow.", element_id: null, effect_kind: "strike", power: 100, accuracy: 1, energy_cost: 0, effect_payload: { mult: 1.0 } },
-  { id: 2, code: "guard", display_name: "Guard", description: "Brace and reduce damage taken.", element_id: null, effect_kind: "guard", power: 40, accuracy: 1, energy_cost: 0, effect_payload: { mult: 0.55, guarding: true } },
-  { id: 3, code: "burst", display_name: "Burst", description: "Risky all-out assault.", element_id: null, effect_kind: "burst", power: 155, accuracy: 0.9, energy_cost: 0, effect_payload: { mult: 1.55 } },
-  { id: 4, code: "ignis_jab", display_name: "Ignis Jab", description: "A scorching poke.", element_id: 1, effect_kind: "strike", power: 110, accuracy: 1, energy_cost: 0, effect_payload: { mult: 1.1, status_chance: 0.2, status: "burn", def_debuff: 1 } },
-  { id: 5, code: "veil_lash", display_name: "Veil Lash", description: "A whipping current.", element_id: 2, effect_kind: "strike", power: 110, accuracy: 1, energy_cost: 0, effect_payload: { mult: 1.1, status_chance: 0.2, status: "soak", spd_debuff: 1 } },
-  { id: 6, code: "aether_cut", display_name: "Aether Cut", description: "A slicing breeze.", element_id: 3, effect_kind: "strike", power: 105, accuracy: 1, energy_cost: 0, effect_payload: { mult: 1.05, crit_bonus: 5, status_chance: 0.15, status: "gust" } },
-  { id: 7, code: "terra_wall", display_name: "Terra Wall", description: "Raise a rocky guard.", element_id: 4, effect_kind: "guard", power: 30, accuracy: 1, energy_cost: 0, effect_payload: { mult: 0.4, guarding: true, def_buff: 2 } },
-  { id: 8, code: "umbral_spike", display_name: "Umbral Spike", description: "Strike from the blind spot.", element_id: 5, effect_kind: "burst", power: 140, accuracy: 0.92, energy_cost: 0, effect_payload: { mult: 1.4, status_chance: 0.25, status: "hex", atk_debuff: 1 } },
-  { id: 9, code: "radiant_soothe", display_name: "Radiant Soothe", description: "Restore a little health.", element_id: 6, effect_kind: "heal", power: 0, accuracy: 1, energy_cost: 0, effect_payload: { heal_pct: 0.18 } },
+  { id: 1, code: "strike", display_name: "Strike", description: "A solid blow.", element_id: null, effect_kind: "strike", power: 100, accuracy: 1, effect_payload: { mult: 1.0 } },
+  { id: 2, code: "guard", display_name: "Guard", description: "Brace and reduce damage taken.", element_id: null, effect_kind: "guard", power: 40, accuracy: 1, effect_payload: { mult: 0.55, guarding: true } },
+  { id: 3, code: "burst", display_name: "Burst", description: "Risky all-out assault.", element_id: null, effect_kind: "burst", power: 155, accuracy: 0.9, effect_payload: { mult: 1.55 } },
+  { id: 4, code: "ignis_jab", display_name: "Ignis Jab", description: "A scorching poke.", element_id: 1, effect_kind: "strike", power: 110, accuracy: 1, effect_payload: { mult: 1.1, status_chance: 0.2, status: "burn", def_debuff: 1 } },
+  { id: 5, code: "veil_lash", display_name: "Veil Lash", description: "A whipping current.", element_id: 2, effect_kind: "strike", power: 110, accuracy: 1, effect_payload: { mult: 1.1, status_chance: 0.2, status: "soak", spd_debuff: 1 } },
+  { id: 6, code: "aether_cut", display_name: "Aether Cut", description: "A slicing breeze.", element_id: 3, effect_kind: "strike", power: 105, accuracy: 1, effect_payload: { mult: 1.05, crit_bonus: 5, status_chance: 0.15, status: "gust" } },
+  { id: 7, code: "terra_wall", display_name: "Terra Wall", description: "Raise a rocky guard.", element_id: 4, effect_kind: "guard", power: 30, accuracy: 1, effect_payload: { mult: 0.4, guarding: true, def_buff: 2 } },
+  { id: 8, code: "umbral_spike", display_name: "Umbral Spike", description: "Strike from the blind spot.", element_id: 5, effect_kind: "burst", power: 140, accuracy: 0.92, effect_payload: { mult: 1.4, status_chance: 0.25, status: "hex", atk_debuff: 1 } },
+  { id: 9, code: "radiant_soothe", display_name: "Radiant Soothe", description: "Restore a little health.", element_id: 6, effect_kind: "heal", power: 0, accuracy: 1, effect_payload: { heal_pct: 0.18 } },
 ];
 
 const ELEMENTAL_MOVE = { 1: 4, 2: 5, 3: 6, 4: 7, 5: 8, 6: 9 };
@@ -472,15 +472,15 @@ export const evolutionRequirements = [
 }));
 
 export const zones = [
-  [1, "cinderwaste", "Cinderwaste", "Ash drifts over cracked Ignis earth.", 0],
-  [2, "mistveil", "Mistveil", "Fog curls between Veil tidepools.", 0],
-  [3, "skyshear", "Skyshear", "Aether winds shear the cliff edge.", 0],
-  [4, "stoneheart", "Stoneheart", "Terra ridges hum underfoot.", 0],
-  [5, "nightwell", "Nightwell", "Umbral dark pools without a bottom.", 0],
-  [6, "dawnfield", "Dawnfield", "Radiance light pools in the grass.", 0],
-  [7, "crossroads", "Crossroads", "All six affinities wander here.", 0],
-].map(([id, code, display_name, vibe, energy_cost]) => ({
-  id, code, display_name, vibe, energy_cost, min_player_level: 1, name: display_name,
+  [1, "cinderwaste", "Cinderwaste", "Ash drifts over cracked Ignis earth."],
+  [2, "mistveil", "Mistveil", "Fog curls between Veil tidepools."],
+  [3, "skyshear", "Skyshear", "Aether winds shear the cliff edge."],
+  [4, "stoneheart", "Stoneheart", "Terra ridges hum underfoot."],
+  [5, "nightwell", "Nightwell", "Umbral dark pools without a bottom."],
+  [6, "dawnfield", "Dawnfield", "Radiance light pools in the grass."],
+  [7, "crossroads", "Crossroads", "All six affinities wander here."],
+].map(([id, code, display_name, vibe]) => ({
+  id, code, display_name, vibe, min_player_level: 1, name: display_name,
 }));
 
 let zeId = 1;
@@ -511,5 +511,3 @@ export const zoneEncounters = [
   stat_variance_max: stage <= 2 ? 1.0 : 1.05,
 }));
 
-/** @deprecated Training removed — stats are raised via shop boosters. */
-export const trainingDrills = [];

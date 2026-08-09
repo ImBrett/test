@@ -737,16 +737,16 @@ INSERT INTO species_base_stats (id, species_id, stat_id, value) VALUES
   (593, 66, 8, 14),
   (594, 66, 9, 10);
 
-INSERT INTO moves (id, code, display_name, description, element_id, effect_kind, power, accuracy, energy_cost, effect_payload, created_at, updated_at) VALUES
-  (1, 'strike', 'Strike', 'A solid blow.', NULL, 'strike', 100, 1, 0, '{"mult":1}', datetime('now'), datetime('now')),
-  (2, 'guard', 'Guard', 'Brace and reduce damage taken.', NULL, 'guard', 40, 1, 0, '{"mult":0.55,"guarding":true}', datetime('now'), datetime('now')),
-  (3, 'burst', 'Burst', 'Risky all-out assault.', NULL, 'burst', 155, 0.9, 0, '{"mult":1.55}', datetime('now'), datetime('now')),
-  (4, 'ignis_jab', 'Ignis Jab', 'A scorching poke.', 1, 'strike', 110, 1, 0, '{"mult":1.1,"status_chance":0.2,"status":"burn","def_debuff":1}', datetime('now'), datetime('now')),
-  (5, 'veil_lash', 'Veil Lash', 'A whipping current.', 2, 'strike', 110, 1, 0, '{"mult":1.1,"status_chance":0.2,"status":"soak","spd_debuff":1}', datetime('now'), datetime('now')),
-  (6, 'aether_cut', 'Aether Cut', 'A slicing breeze.', 3, 'strike', 105, 1, 0, '{"mult":1.05,"crit_bonus":5,"status_chance":0.15,"status":"gust"}', datetime('now'), datetime('now')),
-  (7, 'terra_wall', 'Terra Wall', 'Raise a rocky guard.', 4, 'guard', 30, 1, 0, '{"mult":0.4,"guarding":true,"def_buff":2}', datetime('now'), datetime('now')),
-  (8, 'umbral_spike', 'Umbral Spike', 'Strike from the blind spot.', 5, 'burst', 140, 0.92, 0, '{"mult":1.4,"status_chance":0.25,"status":"hex","atk_debuff":1}', datetime('now'), datetime('now')),
-  (9, 'radiant_soothe', 'Radiant Soothe', 'Restore a little health.', 6, 'heal', 0, 1, 0, '{"heal_pct":0.18}', datetime('now'), datetime('now'));
+INSERT INTO moves (id, code, display_name, description, element_id, effect_kind, power, accuracy, effect_payload, created_at, updated_at) VALUES
+  (1, 'strike', 'Strike', 'A solid blow.', NULL, 'strike', 100, 1, '{"mult":1}', datetime('now'), datetime('now')),
+  (2, 'guard', 'Guard', 'Brace and reduce damage taken.', NULL, 'guard', 40, 1, '{"mult":0.55,"guarding":true}', datetime('now'), datetime('now')),
+  (3, 'burst', 'Burst', 'Risky all-out assault.', NULL, 'burst', 155, 0.9, '{"mult":1.55}', datetime('now'), datetime('now')),
+  (4, 'ignis_jab', 'Ignis Jab', 'A scorching poke.', 1, 'strike', 110, 1, '{"mult":1.1,"status_chance":0.2,"status":"burn","def_debuff":1}', datetime('now'), datetime('now')),
+  (5, 'veil_lash', 'Veil Lash', 'A whipping current.', 2, 'strike', 110, 1, '{"mult":1.1,"status_chance":0.2,"status":"soak","spd_debuff":1}', datetime('now'), datetime('now')),
+  (6, 'aether_cut', 'Aether Cut', 'A slicing breeze.', 3, 'strike', 105, 1, '{"mult":1.05,"crit_bonus":5,"status_chance":0.15,"status":"gust"}', datetime('now'), datetime('now')),
+  (7, 'terra_wall', 'Terra Wall', 'Raise a rocky guard.', 4, 'guard', 30, 1, '{"mult":0.4,"guarding":true,"def_buff":2}', datetime('now'), datetime('now')),
+  (8, 'umbral_spike', 'Umbral Spike', 'Strike from the blind spot.', 5, 'burst', 140, 0.92, '{"mult":1.4,"status_chance":0.25,"status":"hex","atk_debuff":1}', datetime('now'), datetime('now')),
+  (9, 'radiant_soothe', 'Radiant Soothe', 'Restore a little health.', 6, 'heal', 0, 1, '{"heal_pct":0.18}', datetime('now'), datetime('now'));
 
 INSERT INTO species_moves (id, species_id, move_id, unlock_stage, slot) VALUES
   (1, 1, 1, 1, 1),
@@ -1216,14 +1216,14 @@ INSERT INTO evolution_requirements (id, evolution_path_id, requirement_kind, sta
   (137, 60, 'stat', 5, NULL, 28),
   (138, 60, 'item', NULL, 1, 1);
 
-INSERT INTO zones (id, code, display_name, vibe, energy_cost, min_player_level, created_at, updated_at) VALUES
-  (1, 'cinderwaste', 'Cinderwaste', 'Ash drifts over cracked Ignis earth.', 0, 1, datetime('now'), datetime('now')),
-  (2, 'mistveil', 'Mistveil', 'Fog curls between Veil tidepools.', 0, 1, datetime('now'), datetime('now')),
-  (3, 'skyshear', 'Skyshear', 'Aether winds shear the cliff edge.', 0, 1, datetime('now'), datetime('now')),
-  (4, 'stoneheart', 'Stoneheart', 'Terra ridges hum underfoot.', 0, 1, datetime('now'), datetime('now')),
-  (5, 'nightwell', 'Nightwell', 'Umbral dark pools without a bottom.', 0, 1, datetime('now'), datetime('now')),
-  (6, 'dawnfield', 'Dawnfield', 'Radiance light pools in the grass.', 0, 1, datetime('now'), datetime('now')),
-  (7, 'crossroads', 'Crossroads', 'All six affinities wander here.', 0, 1, datetime('now'), datetime('now'));
+INSERT INTO zones (id, code, display_name, vibe, min_player_level, created_at, updated_at) VALUES
+  (1, 'cinderwaste', 'Cinderwaste', 'Ash drifts over cracked Ignis earth.', 1, datetime('now'), datetime('now')),
+  (2, 'mistveil', 'Mistveil', 'Fog curls between Veil tidepools.', 1, datetime('now'), datetime('now')),
+  (3, 'skyshear', 'Skyshear', 'Aether winds shear the cliff edge.', 1, datetime('now'), datetime('now')),
+  (4, 'stoneheart', 'Stoneheart', 'Terra ridges hum underfoot.', 1, datetime('now'), datetime('now')),
+  (5, 'nightwell', 'Nightwell', 'Umbral dark pools without a bottom.', 1, datetime('now'), datetime('now')),
+  (6, 'dawnfield', 'Dawnfield', 'Radiance light pools in the grass.', 1, datetime('now'), datetime('now')),
+  (7, 'crossroads', 'Crossroads', 'All six affinities wander here.', 1, datetime('now'), datetime('now'));
 
 INSERT INTO zone_encounters (id, zone_id, species_id, weight, min_stage, max_stage, stat_variance_min, stat_variance_max) VALUES
   (1, 1, 1, 35, 1, 1, 0.72, 1),
@@ -1268,6 +1268,3 @@ INSERT INTO zone_encounters (id, zone_id, species_id, weight, min_stage, max_sta
   (40, 7, 35, 7, 2, 2, 0.72, 1),
   (41, 7, 46, 7, 2, 2, 0.72, 1),
   (42, 7, 57, 7, 2, 2, 0.72, 1);
-
-INSERT INTO training_drills (id, code, display_name, description, stat_id, energy_cost, base_gain, critical_chance, critical_bonus, coin_reward) VALUES
-;

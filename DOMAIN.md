@@ -6,7 +6,7 @@ The first draft captured ownership and evolution *shapes*, but left most domain
 behavior in application code:
 
 - Elements, type matchups, zones, moves, items, and encounter tables were hardcoded
-- Player energy/coins lived outside the model
+- Player coins lived outside the model
 - Evolution gates only knew about `pet_stats` rows (awkward join), not polymorphic rules
 - Combat was ephemeral with no aggregate boundary
 - No event stream for projections or audit
@@ -30,7 +30,7 @@ app read rows; designers change content without code changes.
 
 | Context | Aggregate roots | Owns |
 |---|---|---|
-| **Catalog** | Species, Move, Zone, Item, EvolutionPath | Base stats, learnsets, matchups, encounters, drills, evolution gates |
+| **Catalog** | Species, Move, Zone, Item, EvolutionPath | Base stats, learnsets, matchups, encounters, shop, evolution gates |
 | **Player** | Player | Creatures, stats, moves, party, inventory, resources |
 | **Combat** | Battle | Participants, turn actions |
 | **Ledger** | (append-only) | Domain events for audit / read models |
@@ -46,7 +46,6 @@ Cross-context references use IDs only (no shared mutable state).
 | Element | Affinity that drives matchups | `elements` |
 | Stat | Attribute (Attack, Health, Speed, Defense, Mana + crit/status) | `stats` |
 | Scan | Defeat progress 0–100% toward obtaining a species | `player_species_scans` |
-| Drill | Catalog training action targeting a stat | `training_drills` |
 | Move | Catalog combat action with `effect_kind` + payload | `moves` |
 | Evolution path | Directed species → species transform | `evolution_paths` |
 | Requirement | Data-driven gate on a path | `evolution_requirements` |
@@ -105,10 +104,10 @@ pick weighted species from zone_encounters where stage in [min,max]
 scale base stats by uniform(variance_min, variance_max)
 ```
 
-### Training
+### Shop training
 ```
-drill = training_drills[id]
-spend energy_cost; gain base_gain (+ critical_bonus on roll)
+listing = shopListings[item_id]
+spend coins; apply effect_payload.gain to creature.stat(stat_id)
 ```
 
 ## Mapping from the original schema
