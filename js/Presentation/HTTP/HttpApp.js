@@ -71,11 +71,24 @@ export function bootHttpPresentation({ bus, services, catalog }) {
       </div>
       <div class="stat-list">
         ${p.stats
+          .filter((s) => s.statId <= 5)
           .map(
             (s) => `
           <div class="stat-row">
             <div class="name" style="color:${s.color}">${s.name}</div>
             <div class="bar"><span style="width:${Math.min(100, (s.value / maxStat) * 100)}%;background:${s.color}"></span></div>
+            <div class="val">${s.value}</div>
+          </div>`
+          )
+          .join("")}
+      </div>
+      <div class="stat-list secondary-stats">
+        ${p.stats
+          .filter((s) => s.statId > 5)
+          .map(
+            (s) => `
+          <div class="stat-row compact">
+            <div class="name" style="color:${s.color}">${s.name}</div>
             <div class="val">${s.value}</div>
           </div>`
           )
@@ -118,7 +131,7 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     const pick = $("#train-pick");
     if (!state.party.length) {
       pick.innerHTML = "";
-      $("#train-stats").innerHTML = `<div class="empty">Catch a beast first.</div>`;
+      $("#train-stats").innerHTML = `<div class="empty">Claim a beast from Scan first.</div>`;
       return;
     }
     if (!trainTargetId || !state.party.find((p) => p.id === trainTargetId)) {
@@ -141,6 +154,7 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     });
     const pet = state.party.find((p) => p.id === trainTargetId);
     $("#train-stats").innerHTML = pet.stats
+      .filter((s) => s.statId <= 5)
       .map(
         (s) => `
       <button class="train-btn" data-stat="${s.statId}">
@@ -262,30 +276,30 @@ export function bootHttpPresentation({ bus, services, catalog }) {
       const banner = $("#result-banner");
       banner.classList.add("show");
       if (turn.result.outcome === "win") {
+        const scan = turn.result.scan;
+        const scanLine = scan
+          ? `Scan ${scan.speciesName} +${scan.gain}% → ${scan.scanLevel}%`
+          : "";
         banner.innerHTML = `
           <h3>Victory</h3>
           <p>+${turn.result.coinGain} coins${
             turn.result.trainBoost ? ` · +1 ${turn.result.trainBoost.stat.display_name}` : ""
           }</p>
+          ${scanLine ? `<p class="scan-toast">${escapeHtml(scanLine)}${scan.canClaim ? " · ready to claim" : ""}</p>` : ""}
           <div class="action-row">
             ${
-              turn.result.canCatch
-                ? `<button class="btn btn-primary" id="btn-catch">Catch · 1 Orb</button>`
+              scan?.canClaim
+                ? `<button class="btn btn-primary" id="btn-to-scan">Open Scan</button>`
                 : ""
             }
-            <button class="btn btn-secondary ${turn.result.canCatch ? "" : "wide"}" id="btn-leave">Return</button>
+            <button class="btn btn-secondary ${scan?.canClaim ? "" : "wide"}" id="btn-leave">Return</button>
           </div>`;
-        $("#btn-catch")?.addEventListener("click", async () => {
-          const c = await dispatch(AppEvents.CATCH_CREATURE, {
-            battleSession,
-            itemId: 1,
-          });
-          if (c?.ok) {
-            toast(`Caught ${c.data.caught.nickname}!`);
-            leaveBattle();
-          } else if (c && !c.ok) {
-            toast(c.error.message || "It broke free…");
-          }
+        $("#btn-to-scan")?.addEventListener("click", () => {
+          battleSession = null;
+          renderScan();
+          showScreen("screen-scan");
+          $$(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === "scan"));
+          $("#nav").classList.remove("hidden");
         });
         $("#btn-leave").onclick = leaveBattle;
       } else {
@@ -303,6 +317,53 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     battleSession = null;
     renderExplore();
     showScreen("screen-explore");
+    $("#nav").classList.remove("hidden");
+  }
+
+  function renderScan() {
+    paintMeters(state);
+    const list = $("#scan-list");
+    const scans = state.scans || [];
+    if (!scans.length) {
+      list.innerHTML = `<div class="empty">Defeat wild beasts to fill scan data. At 100%, claim them here.</div>`;
+      return;
+    }
+    list.innerHTML = scans
+      .map((s) => {
+        const pct = Math.min(100, s.scanLevel);
+        return `
+        <div class="scan-card ${s.canClaim ? "ready" : ""} ${s.claimed ? "claimed" : ""}">
+          <div class="scan-head">
+            ${avatarHtml(s.species)}
+            <div>
+              <strong>${escapeHtml(s.species.name)}</strong>
+              <small>${escapeHtml(s.species.element)} · ${escapeHtml(s.species.stageName)}</small>
+            </div>
+            <div class="power-chip">${pct}%</div>
+          </div>
+          <div class="scan-bar"><span style="width:${pct}%"></span></div>
+          <p class="scan-blurb">${escapeHtml(s.species.blurb)}</p>
+          ${
+            s.canClaim
+              ? `<button class="btn btn-primary wide" data-claim="${s.speciesId}">Obtain</button>`
+              : s.claimed
+                ? `<div class="scan-status">Obtained</div>`
+                : `<div class="scan-status">Keep battling to complete the scan</div>`
+          }
+        </div>`;
+      })
+      .join("");
+    list.querySelectorAll("[data-claim]").forEach((btn) => {
+      btn.onclick = async () => {
+        const res = await dispatch(AppEvents.CLAIM_SCAN, {
+          speciesId: Number(btn.dataset.claim),
+        });
+        if (res?.ok) {
+          toast(`Obtained ${res.data.claimed.nickname}!`);
+          renderScan();
+        }
+      };
+    });
   }
 
   function renderTreeNode(node, depth = 0) {
@@ -496,7 +557,9 @@ export function bootHttpPresentation({ bus, services, catalog }) {
       if (tab === "party") renderParty();
       if (tab === "train") renderTrain();
       if (tab === "explore") renderExplore();
+      if (tab === "scan") renderScan();
       if (tab === "evolve") renderEvolve();
+      $$(".nav-btn").forEach((b) => b.classList.toggle("active", b === btn));
       showScreen(`screen-${tab}`);
     });
   });

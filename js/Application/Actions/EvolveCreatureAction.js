@@ -108,7 +108,7 @@ export function createDevolveCreatureAction({ catalog, uow }) {
       }
 
       const lineage = parseLineage(creature);
-      if (lineage.length <= 1) return fail("NO_ANCESTOR", "Already at Spark form");
+      if (lineage.length <= 1) return fail("NO_ANCESTOR", "Already at Hatchling form");
 
       const fromSpecies = catalog.speciesById(creature.species_id);
       lineage.pop();

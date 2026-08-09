@@ -27,8 +27,8 @@ export function createCreatePlayerAction({ catalog, uow, clock }) {
       });
       uow.insertInventoryRow({
         player_id: player.id,
-        item_id: 1,
-        quantity: 5,
+        item_id: 2, // rations
+        quantity: 3,
       });
       for (let slot = 1; slot <= 6; slot++) {
         uow.insertPartySlot({

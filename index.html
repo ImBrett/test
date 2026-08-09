@@ -70,7 +70,7 @@
       <section class="screen" id="screen-starter">
         <div class="panel" style="margin-top: 8vh">
           <h2>Pick your first beast</h2>
-          <p class="lead">Three lineages. Five stages. Branches decide their fate.</p>
+          <p class="lead">Six affinities. Five stages. Branches decide their fate.</p>
           <div class="starter-grid" id="starter-grid"></div>
           <button class="btn btn-primary wide" id="btn-begin" style="width: 100%; margin-top: 16px" disabled>
             Begin
@@ -132,6 +132,22 @@
         <div id="battle-root"></div>
       </section>
 
+      <!-- SCAN -->
+      <section class="screen" id="screen-scan">
+        <header class="topbar">
+          <div class="who who-name">Traveler</div>
+          <div class="meters">
+            <div class="meter energy"><span class="dot"></span><span class="meter-energy">20/20</span></div>
+            <div class="meter coins"><span class="dot"></span><span class="meter-coins">0</span></div>
+          </div>
+        </header>
+        <div class="section-head">
+          <h1>Scan</h1>
+          <span>Defeat to fill · claim at 100%</span>
+        </div>
+        <div class="scan-list" id="scan-list"></div>
+      </section>
+
       <!-- EVOLVE -->
       <section class="screen" id="screen-evolve">
         <header class="topbar">
@@ -152,6 +168,7 @@
         <button class="nav-btn active" data-tab="party"><span class="ico">◈</span>Party</button>
         <button class="nav-btn" data-tab="train"><span class="ico">▴</span>Train</button>
         <button class="nav-btn" data-tab="explore"><span class="ico">◎</span>Explore</button>
+        <button class="nav-btn" data-tab="scan"><span class="ico">◌</span>Scan</button>
         <button class="nav-btn" data-tab="evolve"><span class="ico">✧</span>Evolve</button>
       </nav>
     </div>

@@ -9,7 +9,7 @@ export const AppEvents = Object.freeze({
   DEVOLVE_CREATURE: "evolution.devolve",
   EXPLORE_ZONE: "explore.start",
   BATTLE_ACTION: "battle.act",
-  CATCH_CREATURE: "battle.catch",
+  CLAIM_SCAN: "scan.claim",
   REST_PLAYER: "player.rest",
   REFRESH_STATE: "app.refresh",
   REGEN_ENERGY: "player.regenEnergy",

@@ -409,8 +409,8 @@ img {
   height: calc(var(--nav-h) + var(--safe-bottom));
   padding: 8px 10px var(--safe-bottom);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
   background: rgba(10, 16, 13, 0.92);
   border-top: 1px solid var(--line);
   backdrop-filter: blur(16px);
@@ -426,10 +426,10 @@ img {
   place-items: center;
   gap: 2px;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 600;
   border-radius: 14px;
-  padding: 6px 4px;
+  padding: 6px 2px;
 }
 
 .nav-btn .ico {
@@ -1088,10 +1088,92 @@ img {
   color: var(--ok);
 }
 
+/* ——— Scan codex ——— */
+.scan-list {
+  padding: 8px 16px 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.scan-card {
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.scan-card.ready {
+  border-color: rgba(125, 206, 160, 0.55);
+  background: rgba(125, 206, 160, 0.08);
+}
+
+.scan-card.claimed {
+  opacity: 0.78;
+}
+
+.scan-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.scan-head strong {
+  display: block;
+}
+
+.scan-head small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.scan-bar {
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.scan-bar > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--leaf), var(--foam));
+  transition: width 0.35s ease;
+}
+
+.scan-blurb {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 0 0 10px;
+}
+
+.scan-status {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 6px 0 2px;
+}
+
+.scan-toast {
+  color: var(--foam);
+  font-size: 0.88rem;
+}
+
+.secondary-stats {
+  margin-top: 8px;
+  opacity: 0.9;
+}
+
+.stat-row.compact {
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
 /* ——— Starter pick ——— */
 .starter-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 10px;
 }
 

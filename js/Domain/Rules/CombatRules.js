@@ -1,19 +1,55 @@
 export function combatPower(enriched) {
   const map = Object.fromEntries(enriched.stats.map((s) => [s.stat_id, s.value]));
-  const might = map[1] || 0;
-  const vital = map[2] || 0;
-  const swift = map[3] || 0;
-  const guard = map[4] || 0;
-  const spirit = map[5] || 0;
+  const attack = map[1] || 0;
+  const health = map[2] || 0;
+  const speed = map[3] || 0;
+  const defense = map[4] || 0;
+  const mana = map[5] || 0;
+  const critChance = map[6] || 0;
+  const critDamage = map[7] || 0;
+  const effectiveness = map[8] || 0;
+  const resilience = map[9] || 0;
   return {
-    hp: 48 + vital * 5 + guard * 2,
-    atk: 8 + might * 2 + Math.floor(spirit * 0.6),
-    spd: 5 + swift,
-    def: 3 + Math.floor(guard * 1.3),
-    crit: Math.min(38, 6 + Math.floor(swift * 0.8) + Math.floor(spirit * 0.4)),
+    hp: 48 + health * 5 + defense * 2,
+    atk: 8 + attack * 2 + Math.floor(mana * 0.6),
+    spd: 5 + speed,
+    def: 3 + Math.floor(defense * 1.3),
+    crit: Math.min(45, 4 + critChance + Math.floor(speed * 0.3)),
+    critMult: 1.5 + critDamage * 0.02,
+    effectiveness,
+    resilience,
+    mana,
     element_id: enriched.species?.element_id,
     map,
   };
+}
+
+function tryExtraEffect(random, attacker, defender, payload, label, lines) {
+  const chance = payload.status_chance;
+  if (!chance) return;
+  const land =
+    chance +
+    (attacker.effectiveness || 0) * 0.01 -
+    (defender.resilience || 0) * 0.01;
+  if (random.next() > Math.max(0.05, Math.min(0.85, land))) {
+    lines.push({ text: `${label}'s extra effect failed to stick.`, dmg: 0 });
+    return;
+  }
+  if (payload.def_debuff) {
+    defender.def = Math.max(0, defender.def - payload.def_debuff);
+    lines.push({ text: `${label}'s ${payload.status || "effect"} softens their defense!`, dmg: 0 });
+  }
+  if (payload.spd_debuff) {
+    defender.spd = Math.max(0, defender.spd - payload.spd_debuff);
+    lines.push({ text: `${label}'s ${payload.status || "effect"} slows them!`, dmg: 0 });
+  }
+  if (payload.atk_debuff) {
+    defender.atk = Math.max(1, defender.atk - payload.atk_debuff);
+    lines.push({ text: `${label}'s ${payload.status || "effect"} saps their attack!`, dmg: 0 });
+  }
+  if (payload.status && !payload.def_debuff && !payload.spd_debuff && !payload.atk_debuff) {
+    lines.push({ text: `${label} lands ${payload.status}!`, dmg: 0 });
+  }
 }
 
 export function createMoveResolvers({ catalog, random }) {
@@ -28,7 +64,7 @@ export function createMoveResolvers({ catalog, random }) {
     );
     mult *= matchup;
     const crit = random.next() * 100 < attacker.crit + (payload.crit_bonus || 0);
-    if (crit) mult *= 1.6;
+    if (crit) mult *= attacker.critMult || 1.6;
     const raw = attacker.atk * mult * (move.power / 100);
     const mitigated = Math.max(
       1,
@@ -38,7 +74,7 @@ export function createMoveResolvers({ catalog, random }) {
     defender._guarding = false;
     const tip =
       matchup > 1 ? " It's super effective!" : matchup < 1 ? " It's not very effective…" : "";
-    return [
+    const lines = [
       {
         text: `${label} uses ${move.display_name} for ${mitigated}${crit ? "!" : "."}${tip}`,
         crit,
@@ -46,6 +82,8 @@ export function createMoveResolvers({ catalog, random }) {
         matchup,
       },
     ];
+    tryExtraEffect(random, attacker, defender, payload, label, lines);
+    return lines;
   }
 
   return {

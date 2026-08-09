@@ -21,8 +21,8 @@ import {
 import {
   createStartEncounterAction,
   createResolveBattleTurnAction,
-  createCatchWildCreatureAction,
 } from "../../Application/Actions/BattleActions.js";
+import { createClaimScannedSpeciesAction } from "../../Application/Actions/ScanActions.js";
 import {
   createRestPlayerAction,
   createRegenerateEnergyAction,
@@ -76,10 +76,9 @@ export function createApplication(options = {}) {
       random,
       moveResolvers,
     }),
-    catchWildCreature: createCatchWildCreatureAction({
+    claimScannedSpecies: createClaimScannedSpeciesAction({
       catalog,
       uow,
-      random,
       obtainCreature,
     }),
     restPlayer: createRestPlayerAction({ uow, clock }),

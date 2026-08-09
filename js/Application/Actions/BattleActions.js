@@ -1,6 +1,7 @@
 import { ok, fail } from "../../Domain/DTOs/Result.js";
 import { appendEvent, enrichCreature, regenEnergy } from "../../Domain/Rules/CreatureEnricher.js";
 import { combatPower, resolveMove } from "../../Domain/Rules/CombatRules.js";
+import { applyScanProgress } from "./ScanActions.js";
 
 function weightedPick(encounters, random) {
   const total = encounters.reduce((a, e) => a + e.weight, 0);
@@ -193,22 +194,39 @@ export function createResolveBattleTurnAction({ catalog, uow, clock, random, mov
         const rows = uow.statsForCreature(battleSession.you.id);
         let trainBoost = null;
         if (rows.length) {
-          const pick = rows[random.intBelow(rows.length)];
+          const trainable = rows.filter((r) => r.stat_id <= 5);
+          const pick = (trainable.length ? trainable : rows)[random.intBelow((trainable.length || rows.length))];
           pick.value += 1;
           trainBoost = { stat: catalog.statById(pick.stat_id), value: pick.value };
         }
-        if (random.next() < 0.35) uow.addInventory(1, 1);
-        if (random.next() < 0.08) uow.addInventory(3, 1); // Apex Seal
-        // mark battle — we don't keep mutable battle row refs easily; append event
+        if (random.next() < 0.25) uow.addInventory(2, 1); // ration
+        if (random.next() < 0.08) uow.addInventory(1, 1); // Apex Seal
+
+        const scan = applyScanProgress({
+          catalog,
+          uow,
+          random,
+          speciesId: battleSession.wild.species_id,
+        });
+
         appendEvent(uow, player.id, "Battle", battleSession.battleId, "BattleWon", {
           coinGain,
+          scan,
         });
         log.push({ text: `Victory! +${coinGain} coins.`, reward: true });
+        if (scan) {
+          log.push({
+            text: `Scan ${scan.speciesName}: +${scan.gain}% → ${scan.scanLevel}%${
+              scan.canClaim ? " — ready to claim!" : ""
+            }`,
+            reward: true,
+          });
+        }
         result = {
           outcome: "win",
           coinGain,
           trainBoost,
-          canCatch: uow.inventoryQty(1) > 0 || uow.inventoryQty(2) > 0,
+          scan,
         };
       } else if (you.hp <= 0) {
         appendEvent(uow, player.id, "Battle", battleSession.battleId, "BattleLost", {});
@@ -224,43 +242,6 @@ export function createResolveBattleTurnAction({ catalog, uow, clock, random, mov
         log,
         result,
       });
-    },
-  };
-}
-
-/** Action: CatchWildCreature — spend catch item, roll catch rate. */
-export function createCatchWildCreatureAction({ catalog, uow, random, obtainCreature }) {
-  return {
-    name: "CatchWildCreature",
-    execute({ battleSession, itemId }) {
-      const item = catalog.itemById(itemId);
-      if (!item || item.item_kind !== "catch") return fail("ITEM", "Not a catch item");
-      if (!uow.consumeInventory(itemId, 1)) return fail("NO_ORB", "No catch items left");
-
-      const species = battleSession.wild.species;
-      const base = species.base_catch_rate || 0.35;
-      const ratio = battleSession.you.power / Math.max(1, battleSession.wild.power);
-      const hpFactor =
-        1 - battleSession.wildHp / Math.max(1, battleSession.wildMax);
-      const chance = Math.min(
-        0.85,
-        base + Math.max(0, ratio - 1) * 0.12 + hpFactor * 0.2 + (item.effect_payload?.catch_bonus || 0)
-      );
-
-      if (random.next() >= chance) {
-        uow.commit();
-        return fail("BROKE_FREE", "It broke free");
-      }
-
-      const obtained = obtainCreature.execute({ speciesId: species.id });
-      if (!obtained.ok) return obtained;
-      const player = uow.getPlayer();
-      appendEvent(uow, player.id, "PlayerCreature", obtained.data.creatureId, "CreatureCaught", {
-        species_id: species.id,
-        item_id: itemId,
-      });
-      uow.commit();
-      return ok({ creatureId: obtained.data.creatureId, nickname: obtained.data.nickname });
     },
   };
 }

@@ -7,6 +7,8 @@ export const DomainEventTypes = Object.freeze({
   CREATURE_EVOLVED: "CreatureEvolved",
   CREATURE_DEVOLVED: "CreatureDevolved",
   CREATURE_CAUGHT: "CreatureCaught",
+  SCAN_PROGRESS: "ScanProgress",
+  SPECIES_CLAIMED: "SpeciesClaimed",
   BATTLE_STARTED: "BattleStarted",
   BATTLE_WON: "BattleWon",
   BATTLE_LOST: "BattleLost",

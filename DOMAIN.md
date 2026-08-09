@@ -44,7 +44,8 @@ Cross-context references use IDs only (no shared mutable state).
 | Species | Catalog identity of a morphable beast | `species` |
 | Creature | A player's owned instance of a species | `player_creatures` |
 | Element | Affinity that drives matchups | `elements` |
-| Stat | Trainable attribute (Might, Vital…) | `stats` |
+| Stat | Attribute (Attack, Health, Speed, Defense, Mana + crit/status) | `stats` |
+| Scan | Defeat progress 0–100% toward obtaining a species | `player_species_scans` |
 | Drill | Catalog training action targeting a stat | `training_drills` |
 | Move | Catalog combat action with `effect_kind` + payload | `moves` |
 | Evolution path | Directed species → species transform | `evolution_paths` |
@@ -54,12 +55,19 @@ Cross-context references use IDs only (no shared mutable state).
 
 ## Evolution (Digimon-style)
 
-1. Stages: **Spark → Rookie → Champion → Ultimate → Apex** (`species.stage` 1–5).
+1. Stages: **Hatchling → Fledgling → Mature → Ascendant → Apex** (`species.stage` 1–5).
 2. From any form, at most **3 branches** (`evolution_paths.branch_index`).
 3. Evolve only if **all** requirements on the chosen path are met.
-4. Creature stores `lineage_json` (Spark → … → current) for chain UI and devolve.
+4. Creature stores `lineage_json` (Hatchling → … → current) for chain UI and devolve.
 5. On evolve: carry trained surplus over new bases; push species onto lineage.
 6. On devolve: pop lineage; **reset stats to ancestor base** (no free re-train exploit).
+
+## Scan obtain (Digimon-style)
+
+1. Defeat a wild species → fill `player_species_scans.scan_level` (0–100) using `species.base_scan_gain`.
+2. No catch items / orbs. Battle victory only awards scan progress (+ coins / rare Apex Seal).
+3. At 100%, claim the species from the Scan UI once (`claimed = 1`).
+4. Elements: **Ignis, Veil, Aether, Terra, Umbral, Radiance** with self-weakness where noted.
 
 
 ## Data-driven rule interpreters

@@ -45,7 +45,7 @@ export class TrainCreatureRequest {
   validate() {
     assertValid([
       ...requireInt(this.creatureId, "creatureId", { min: 1 }),
-      ...requireInt(this.statId, "statId", { min: 1, max: 5 }),
+      ...requireInt(this.statId, "statId", { min: 1, max: 9 }),
     ]);
   }
 }
@@ -147,22 +147,17 @@ export class BattleActionRequest {
   }
 }
 
-export class CatchCreatureRequest {
+export class ClaimScanRequest {
   constructor(raw) {
-    this.battleSession = raw?.battleSession;
-    this.itemId = Number(raw?.itemId ?? 1);
+    this.speciesId = Number(raw?.speciesId);
   }
   static from(raw) {
-    const dto = new CatchCreatureRequest(raw);
+    const dto = new ClaimScanRequest(raw);
     dto.validate();
     return dto;
   }
   validate() {
-    const errors = requireInt(this.itemId, "itemId", { min: 1 });
-    if (!this.battleSession) {
-      errors.push({ field: "battleSession", message: "battleSession is required" });
-    }
-    assertValid(errors);
+    assertValid(requireInt(this.speciesId, "speciesId", { min: 1 }));
   }
 }
 

@@ -1,5 +1,5 @@
-const SAVE_KEY = "morph_rpg_v4";
-const LEGACY_KEYS = ["morph_rpg_v3", "morph_rpg_v2", "morph_rpg_v1"];
+const SAVE_KEY = "morph_rpg_v5";
+const LEGACY_KEYS = ["morph_rpg_v4", "morph_rpg_v3", "morph_rpg_v2", "morph_rpg_v1"];
 
 export function emptyState() {
   return {
@@ -10,6 +10,7 @@ export function emptyState() {
     player_creature_moves: [],
     player_party_slots: [],
     player_inventory: [],
+    player_species_scans: [],
     battles: [],
     battle_participants: [],
     battle_actions: [],
@@ -21,6 +22,7 @@ export function emptyState() {
       player_creature_moves: 1,
       player_party_slots: 1,
       player_inventory: 1,
+      player_species_scans: 1,
       battles: 1,
       battle_participants: 1,
       battle_actions: 1,
@@ -84,6 +86,47 @@ export function createMemoryUnitOfWork(storage = globalThis.localStorage) {
     listInventory: () => {
       const p = player();
       return p ? state.player_inventory.filter((i) => i.player_id === p.id) : [];
+    },
+    listScans: () => {
+      const p = player();
+      return p ? state.player_species_scans.filter((s) => s.player_id === p.id) : [];
+    },
+    getScan: (speciesId) => {
+      const p = player();
+      if (!p) return null;
+      return (
+        state.player_species_scans.find(
+          (s) => s.player_id === p.id && s.species_id === speciesId
+        ) || null
+      );
+    },
+    upsertScan: (speciesId, gain) => {
+      const p = player();
+      let row = state.player_species_scans.find(
+        (s) => s.player_id === p.id && s.species_id === speciesId
+      );
+      if (!row) {
+        row = {
+          id: state.nextIds.player_species_scans++,
+          player_id: p.id,
+          species_id: speciesId,
+          scan_level: 0,
+          claimed: 0,
+        };
+        state.player_species_scans.push(row);
+      }
+      row.scan_level = Math.min(100, row.scan_level + Math.max(0, gain));
+      return row;
+    },
+    markScanClaimed: (speciesId) => {
+      const row = (() => {
+        const p = player();
+        return state.player_species_scans.find(
+          (s) => s.player_id === p.id && s.species_id === speciesId
+        );
+      })();
+      if (row) row.claimed = 1;
+      return row;
     },
     inventoryQty: (itemId) => {
       const p = player();

@@ -19,7 +19,7 @@ export function enrichCreature(catalog, uow, evaluators, creature) {
     pet: species,
     stats,
     moves,
-    power: stats.reduce((a, s) => a + s.value, 0),
+    power: stats.filter((s) => s.stat_id <= 5).reduce((a, s) => a + s.value, 0),
     evo,
   };
 }

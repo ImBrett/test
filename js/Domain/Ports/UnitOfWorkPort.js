@@ -18,6 +18,10 @@
  * @property {(itemId: number) => number} inventoryQty
  * @property {(itemId: number, qty?: number) => void} addInventory
  * @property {(itemId: number, qty?: number) => boolean} consumeInventory
+ * @property {() => object[]} listScans
+ * @property {(speciesId: number) => object|null} getScan
+ * @property {(speciesId: number, gain: number) => object} upsertScan
+ * @property {(speciesId: number) => object|undefined} markScanClaimed
  * @property {() => object[]} listPartySlots
  * @property {(player: object) => object} insertPlayer
  * @property {(resources: object) => void} insertResources

@@ -22,7 +22,7 @@ export function createSeedCatalog(clock) {
   const evolutionPathTo = (speciesId) =>
     seed.evolutionPaths.find((p) => p.descendant_species_id === speciesId);
 
-  /** Nested tree from a Spark root (for chain UI). */
+  /** Nested tree from a Hatchling root (for chain UI). */
   function buildEvolutionTree(rootSpeciesId) {
     const walk = (speciesId) => {
       const sp = speciesById(speciesId);

@@ -16,6 +16,7 @@ DROP TABLE IF EXISTS domain_events;
 DROP TABLE IF EXISTS battle_actions;
 DROP TABLE IF EXISTS battle_participants;
 DROP TABLE IF EXISTS battles;
+DROP TABLE IF EXISTS player_species_scans;
 DROP TABLE IF EXISTS player_inventory;
 DROP TABLE IF EXISTS player_creature_moves;
 DROP TABLE IF EXISTS player_creature_stats;
@@ -54,7 +55,7 @@ CREATE TABLE rarities (
 
 CREATE TABLE elements (
   id INTEGER PRIMARY KEY NOT NULL,
-  code VARCHAR(16) NOT NULL UNIQUE,          -- ember | tide | gale | stone | shade | bloom
+  code VARCHAR(16) NOT NULL UNIQUE,          -- ignis | veil | aether | terra | umbral | radiance
   display_name VARCHAR(32) NOT NULL,
   hue INTEGER NOT NULL DEFAULT 140,          -- UI tint (data-driven presentation)
   created_at DATETIME NOT NULL,
@@ -74,11 +75,11 @@ CREATE TABLE element_matchups (
 
 CREATE TABLE stats (
   id INTEGER PRIMARY KEY NOT NULL,
-  code VARCHAR(16) NOT NULL UNIQUE,          -- might | vital | swift | guard | spirit
+  code VARCHAR(16) NOT NULL UNIQUE,          -- attack | health | speed | defense | mana | crit_chance | crit_damage | effectiveness | resilience
   display_name VARCHAR(32) NOT NULL,
   description VARCHAR(128) NOT NULL,
   color VARCHAR(16) NOT NULL,               -- UI token
-  combat_role VARCHAR(16) NOT NULL,         -- offense | defense | speed | special | sustain
+  combat_role VARCHAR(16) NOT NULL,         -- offense | defense | speed | special | sustain | crit | status
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL
 );
@@ -88,8 +89,8 @@ CREATE TABLE items (
   code VARCHAR(32) NOT NULL UNIQUE,
   display_name VARCHAR(48) NOT NULL,
   description VARCHAR(160) NOT NULL,
-  item_kind VARCHAR(24) NOT NULL,           -- catch | consumable | evolution | currency_pack
-  effect_payload TEXT NOT NULL DEFAULT '{}', -- JSON: { "catch_bonus": 0.15 } etc.
+  item_kind VARCHAR(24) NOT NULL,           -- consumable | evolution | currency_pack
+  effect_payload TEXT NOT NULL DEFAULT '{}', -- JSON payload for item effects
   rarity_id INTEGER,
   stackable INTEGER NOT NULL DEFAULT 1 CHECK (stackable IN (0, 1)),
   created_at DATETIME NOT NULL,
@@ -105,10 +106,10 @@ CREATE TABLE species (
   blurb VARCHAR(160) NOT NULL,
   glyph VARCHAR(8) NOT NULL,               -- presentation seed (emoji / icon key)
   element_id INTEGER NOT NULL,
-  stage INTEGER NOT NULL CHECK (stage BETWEEN 1 AND 5), -- Spark→Rookie→Champion→Ultimate→Apex
+  stage INTEGER NOT NULL CHECK (stage BETWEEN 1 AND 5), -- Hatchling→Fledgling→Mature→Ascendant→Apex
   rarity_id INTEGER NOT NULL,
   is_starter INTEGER NOT NULL DEFAULT 0 CHECK (is_starter IN (0, 1)),
-  base_catch_rate REAL NOT NULL DEFAULT 0.35,
+  base_scan_gain REAL NOT NULL DEFAULT 20,  -- approx % filled per defeat (before variance)
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   FOREIGN KEY (element_id) REFERENCES elements(id),
@@ -270,12 +271,24 @@ CREATE TABLE player_creatures (
   level INTEGER NOT NULL DEFAULT 1 CHECK (level >= 1),
   experience INTEGER NOT NULL DEFAULT 0 CHECK (experience >= 0),
   battles_won INTEGER NOT NULL DEFAULT 0 CHECK (battles_won >= 0),
-  -- Ordered species ids from Spark root → current (JSON array). Used for chain UI + devolve.
+  -- Ordered species ids from Hatchling root → current (JSON array). Used for chain UI + devolve.
   lineage_json TEXT NOT NULL DEFAULT '[]',
   obtained_at DATETIME NOT NULL,
   is_active INTEGER NOT NULL DEFAULT 0 CHECK (is_active IN (0, 1)),
   FOREIGN KEY (player_id) REFERENCES players(id),
   FOREIGN KEY (species_id) REFERENCES species(id)
+);
+
+-- Digimon-style scan data: defeat wilds to fill 0–100%, then claim from Scan UI (no catch items).
+CREATE TABLE player_species_scans (
+  id INTEGER PRIMARY KEY NOT NULL,
+  player_id INTEGER NOT NULL,
+  species_id INTEGER NOT NULL,
+  scan_level INTEGER NOT NULL DEFAULT 0 CHECK (scan_level BETWEEN 0 AND 100),
+  claimed INTEGER NOT NULL DEFAULT 0 CHECK (claimed IN (0, 1)),
+  FOREIGN KEY (player_id) REFERENCES players(id),
+  FOREIGN KEY (species_id) REFERENCES species(id),
+  UNIQUE (player_id, species_id)
 );
 
 CREATE INDEX idx_player_creatures_player ON player_creatures(player_id);

@@ -28,10 +28,22 @@ async function main() {
   res = await emit(AppEvents.TRAIN_CREATURE, { creatureId, statId: 1 });
   console.log("train →", `+${res.data.train.gain} ${res.data.train.stat.name}`);
 
-  res = await emit(AppEvents.EXPLORE_ZONE, { zoneCode: "emberfield" });
+  res = await emit(AppEvents.EXPLORE_ZONE, { zoneCode: "cinderwaste" });
   console.log("encounter →", res.data.battle.wild.nickname);
 
+  // Force a win loop via act until over (or skip if already over)
+  let session = res.data.session;
+  for (let i = 0; i < 20 && !session.over; i++) {
+    res = await emit(AppEvents.BATTLE_ACTION, { battleSession: session, actionCode: "burst" });
+    if (!res.ok) break;
+    session = res.data.session;
+    if (res.data.turn?.result?.scan) {
+      console.log("scan →", res.data.turn.result.scan);
+    }
+  }
+
   console.log("energy →", services.getAppState().player.resources.energy);
+  console.log("scans →", services.getAppState().scans.length);
   console.log("OK — swap createApplication({ uow: createSqliteUnitOfWork(db) }) when ready.");
 }
 

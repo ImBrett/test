@@ -12,6 +12,7 @@ export function registerControllers(bus, services) {
     evolutionService,
     exploreService,
     battleService,
+    scanService,
   } = services;
 
   bus.on(AppEvents.CREATE_PLAYER, (e) => playerService.createPlayer(e.payload));
@@ -28,7 +29,7 @@ export function registerControllers(bus, services) {
   bus.on(AppEvents.DEVOLVE_CREATURE, (e) => evolutionService.devolve(e.payload));
   bus.on(AppEvents.EXPLORE_ZONE, (e) => exploreService.startEncounter(e.payload));
   bus.on(AppEvents.BATTLE_ACTION, (e) => battleService.act(e.payload));
-  bus.on(AppEvents.CATCH_CREATURE, (e) => battleService.catch(e.payload));
+  bus.on(AppEvents.CLAIM_SCAN, (e) => scanService.claim(e.payload));
 
   return bus;
 }

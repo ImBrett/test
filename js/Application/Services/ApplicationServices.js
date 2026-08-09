@@ -14,7 +14,7 @@ import {
   DevolveCreatureRequest,
   ExploreZoneRequest,
   BattleActionRequest,
-  CatchCreatureRequest,
+  ClaimScanRequest,
   RestPlayerRequest,
 } from "../../Domain/DTOs/Requests/index.js";
 import {
@@ -23,6 +23,7 @@ import {
   toInventoryDto,
   toTrainResultDto,
   toBattleSessionDto,
+  toScanDto,
 } from "../../Domain/DTOs/Responses/index.js";
 import { enrichCreature } from "../../Domain/Rules/CreatureEnricher.js";
 
@@ -54,7 +55,7 @@ export function createApplicationServices(deps) {
       devolveCreature,
       startEncounter,
       resolveBattleTurn,
-      catchWildCreature,
+      claimScannedSpecies,
       restPlayer,
       regenerateEnergy,
     },
@@ -66,6 +67,14 @@ export function createApplicationServices(deps) {
     );
   }
 
+  function scanEntries() {
+    return uow
+      .listScans()
+      .map((row) => toScanDto(row, catalog))
+      .filter(Boolean)
+      .sort((a, b) => b.scanLevel - a.scanLevel || a.species.name.localeCompare(b.species.name));
+  }
+
   function getAppState() {
     regenerateEnergy.execute();
     return toAppStateDto({
@@ -73,6 +82,7 @@ export function createApplicationServices(deps) {
       resources: uow.getResources(),
       creatures: enrichedParty(),
       inventory: toInventoryDto(uow.listInventory(), catalog),
+      scans: scanEntries(),
       catalog,
       events: uow.recentDomainEvents().map((e) => ({
         type: e.event_type,
@@ -194,15 +204,19 @@ export function createApplicationServices(deps) {
         state: getAppState(),
       });
     }),
-    catch: guard((raw) => {
-      const req = CatchCreatureRequest.from(raw);
-      const result = catchWildCreature.execute(req);
+  };
+
+  const scanService = {
+    claim: guard((raw) => {
+      const req = ClaimScanRequest.from(raw);
+      const result = claimScannedSpecies.execute(req);
       if (!result.ok) return result;
       return ok({
-        caught: result.data,
+        claimed: result.data,
         state: getAppState(),
       });
     }),
+    list: guard(() => ok(scanEntries())),
   };
 
   return {
@@ -212,6 +226,7 @@ export function createApplicationServices(deps) {
     evolutionService,
     exploreService,
     battleService,
+    scanService,
     getAppState,
   };
 }

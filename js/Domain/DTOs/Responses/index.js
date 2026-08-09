@@ -156,13 +156,35 @@ export function toInventoryDto(rows, catalog) {
     });
 }
 
-export function toAppStateDto({ player, resources, creatures, inventory, catalog, events }) {
+export function toScanDto(row, catalog) {
+  const species = catalog.speciesById(row.species_id);
+  if (!species) return null;
+  return {
+    speciesId: row.species_id,
+    scanLevel: row.scan_level,
+    claimed: !!row.claimed,
+    canClaim: row.scan_level >= 100 && !row.claimed,
+    species: {
+      id: species.id,
+      name: species.display_name,
+      glyph: species.glyph,
+      hue: species.hue,
+      stage: species.stage,
+      stageName: species.stage_name,
+      element: species.element?.display_name ?? null,
+      blurb: species.blurb,
+    },
+  };
+}
+
+export function toAppStateDto({ player, resources, creatures, inventory, scans = [], catalog, events }) {
   const active = creatures.find((c) => c.isActive) || creatures[0] || null;
   return {
     player: toPlayerDto(player, resources),
     party: creatures,
     activeCreatureId: active?.id ?? null,
     inventory,
+    scans,
     zones: catalog.zones.map(toZoneDto),
     starters: catalog.starterSpeciesIds().map((id) => {
       const s = catalog.speciesById(id);
@@ -181,6 +203,7 @@ export function toAppStateDto({ player, resources, creatures, inventory, catalog
       name: s.display_name,
       description: s.description,
       color: s.color,
+      trainable: !!s.trainable,
     })),
     recentEvents: events,
   };
