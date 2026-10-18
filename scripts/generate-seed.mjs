@@ -121,12 +121,14 @@ lines.push(
 );
 lines.push("");
 
-lines.push("INSERT INTO zones (id, code, display_name, vibe, min_player_level, created_at, updated_at) VALUES");
+lines.push(
+  "INSERT INTO zones (id, code, display_name, vibe, min_player_level, region_code, region_name, area_label, min_wild_level, max_wild_level, is_boss, unlock_after_zone_id, sort_order, created_at, updated_at) VALUES"
+);
 lines.push(
   seed.zones
     .map(
       (z) =>
-        `  (${z.id}, ${q(z.code)}, ${q(z.display_name)}, ${q(z.vibe)}, ${z.min_player_level}, ${now}, ${now})`
+        `  (${z.id}, ${q(z.code)}, ${q(z.display_name)}, ${q(z.vibe)}, ${z.min_player_level}, ${q(z.region_code)}, ${q(z.region_name)}, ${q(z.area_label)}, ${z.min_wild_level}, ${z.max_wild_level}, ${z.is_boss ? 1 : 0}, ${z.unlock_after_zone_id == null ? "NULL" : z.unlock_after_zone_id}, ${z.sort_order}, ${now}, ${now})`
     )
     .join(",\n") + ";"
 );

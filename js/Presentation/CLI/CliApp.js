@@ -43,7 +43,7 @@ async function main() {
   res = await emit(AppEvents.REFORGE_GEAR, { gearId: gear.id });
   console.log("reforge →", res.data.reforge.outcome, res.data.reforge.changed);
 
-  res = await emit(AppEvents.EXPLORE_ZONE, { zoneCode: "cinderwaste" });
+  res = await emit(AppEvents.EXPLORE_ZONE, { zoneCode: "ash-trail" });
   console.log(
     "encounter →",
     res.data.battle.wild.nickname,

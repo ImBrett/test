@@ -98,6 +98,7 @@ export function createApplicationServices(deps) {
       scans: scanEntries(),
       shop: catalog.shopListings().map(toShopListingDto),
       catalog,
+      clearedZoneIds: typeof uow.clearedZoneIds === "function" ? uow.clearedZoneIds() : [],
       events: uow.recentDomainEvents().map((e) => ({
         type: e.event_type,
         aggregate: e.aggregate_type,

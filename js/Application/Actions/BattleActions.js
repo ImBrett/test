@@ -7,20 +7,14 @@ import {
   xpToNextLevel,
   applyLevelUpStatGains,
   scaleStatForLevel,
-  rollWildLevel,
 } from "../../Domain/Rules/LevelRules.js";
+import {
+  isZoneUnlocked,
+  rollLevelInBand,
+  weightedPick,
+} from "../../Domain/Rules/EncounterRules.js";
 import { applyScanProgress } from "./ScanActions.js";
 import { DomainEventTypes } from "../../Domain/Events/DomainEvents.js";
-
-function weightedPick(encounters, random) {
-  const total = encounters.reduce((a, e) => a + e.weight, 0);
-  let roll = random.next() * total;
-  for (const e of encounters) {
-    roll -= e.weight;
-    if (roll <= 0) return e;
-  }
-  return encounters[encounters.length - 1];
-}
 
 /** Action: StartEncounter — roll zone_encounters, open Battle aggregate. */
 export function createStartEncounterAction({ catalog, uow, clock, random, evaluators }) {
@@ -31,6 +25,9 @@ export function createStartEncounterAction({ catalog, uow, clock, random, evalua
       if (!player) return fail("NO_PLAYER", "Create a player first");
       const zone = catalog.zoneByCode(zoneCode);
       if (!zone) return fail("UNKNOWN_ZONE", "Zone not found");
+      if (!isZoneUnlocked(zone, uow.clearedZoneIds?.() || [])) {
+        return fail("ZONE_LOCKED", "Clear the previous area first");
+      }
 
       const activeRow =
         uow.listCreatures().find((c) => c.is_active) || uow.listCreatures()[0];
@@ -40,7 +37,7 @@ export function createStartEncounterAction({ catalog, uow, clock, random, evalua
       const table = catalog.encountersForZone(zone.id);
       const pick = weightedPick(table, random);
       const species = catalog.speciesById(pick.species_id);
-      const wildLevel = rollWildLevel(you.level || 1, species.stage, random);
+      const wildLevel = rollLevelInBand(zone.min_wild_level, zone.max_wild_level, random);
       const variance =
         pick.stat_variance_min +
         random.next() * (pick.stat_variance_max - pick.stat_variance_min);
@@ -170,7 +167,8 @@ export function createResolveBattleTurnAction({ catalog, uow, clock, random, mov
       for (const [actor, target, move, label, isPlayer] of order) {
         if (actor.hp <= 0) continue;
         const lines = resolveMove(moveResolvers, actor, target, move, label);
-        log.push(...lines);
+        const side = isPlayer ? "you" : "foe";
+        log.push(...lines.map((line) => ({ ...line, side })));
         uow.insertBattleAction({
           battle_id: battleSession.battleId,
           turn_number: turnNumber,
@@ -192,8 +190,12 @@ export function createResolveBattleTurnAction({ catalog, uow, clock, random, mov
       let result = null;
       const player = uow.getPlayer();
       if (foe.hp <= 0) {
-        const coinGain =
+        let coinGain =
           8 + Math.floor(battleSession.wild.power / 4) + Math.floor((battleSession.wild.level || 1) / 2);
+        if (battleSession.zone?.is_boss) coinGain *= 2;
+        if (typeof uow.markZoneCleared === "function") {
+          uow.markZoneCleared(battleSession.zone.id);
+        }
         const resources = uow.getResources();
         resources.coins += coinGain;
         const creature = uow.getCreature(battleSession.you.id);

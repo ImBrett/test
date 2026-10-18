@@ -25,6 +25,7 @@ export function emptyState() {
     battle_participants: [],
     battle_actions: [],
     domain_events: [],
+    zone_clears: [],
     nextIds: {
       players: 1,
       player_creatures: 1,
@@ -60,6 +61,7 @@ export function createMemoryUnitOfWork(storage = globalThis.localStorage) {
       const parsed = JSON.parse(raw);
       state = { ...emptyState(), ...parsed };
       if (!Array.isArray(state.player_gear)) state.player_gear = [];
+      if (!Array.isArray(state.zone_clears)) state.zone_clears = [];
       if (!state.nextIds.player_gear) state.nextIds.player_gear = 1;
       for (const g of state.player_gear) {
         if (!Array.isArray(g.sub_stats)) g.sub_stats = [];
@@ -287,6 +289,10 @@ export function createMemoryUnitOfWork(storage = globalThis.localStorage) {
       });
     },
     nextId: (key) => state.nextIds[key]++,
+    clearedZoneIds: () => state.zone_clears.slice(),
+    markZoneCleared: (zoneId) => {
+      if (!state.zone_clears.includes(zoneId)) state.zone_clears.push(zoneId);
+    },
     recentDomainEvents: () => state.domain_events.slice(-30),
     /** @internal test helper */
     _state: () => state,

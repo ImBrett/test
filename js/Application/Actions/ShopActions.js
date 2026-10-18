@@ -181,13 +181,21 @@ export function createUseBattleItemAction({ catalog, uow }) {
         you.def = battleSession.youCombat.def;
         you.spd = battleSession.youCombat.spd;
         you._guarding = false;
-        log.push({ text: `${battleSession.you.nickname} feels clear again.`, dmg: 0 });
+        log.push({
+          text: `${battleSession.you.nickname} feels clear again.`,
+          dmg: 0,
+          side: "you",
+        });
       }
 
       if (payload.heal_pct) {
         const heal = Math.round(you.hpMax * payload.heal_pct);
         you.hp = Math.min(you.hpMax, you.hp + heal);
-        log.push({ text: `${item.display_name} restores ${heal} HP.`, dmg: 0 });
+        log.push({
+          text: `${item.display_name} restores ${heal} HP.`,
+          dmg: 0,
+          side: "you",
+        });
       }
 
       if (!log.length) {

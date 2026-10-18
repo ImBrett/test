@@ -1,17 +1,62 @@
 /**
  * Web presentation — emits AppEvents; never calls services/actions directly.
- * Flow: view interaction → bus.emit(event) → controller → service → action → DTO
+ * Screens live in Views/. This module owns dispatch, navigation, and boot.
  */
 import { AppEvents } from "../../Application/Events/AppEvents.js";
-import { $, $$, escapeHtml, avatarHtml, toast, showScreen, paintMeters } from "./Views/dom.js";
+import { $, $$, toast, showScreen, paintMeters } from "./Views/dom.js";
+import { createPartyView } from "./Views/partyView.js";
+import { createExploreView } from "./Views/exploreView.js";
+import { createBattleView } from "./Views/battleView.js";
+import { createScanView } from "./Views/scanView.js";
+import { createShopView } from "./Views/shopView.js";
+import { createEvolveView } from "./Views/evolveView.js";
+import { createBagView } from "./Views/bagView.js";
+import { createOnboardingView } from "./Views/onboardingView.js";
 
 export function bootHttpPresentation({ bus, services, catalog }) {
   let state = services.getAppState();
-  let selectedStarter = null;
-  let shopTargetId = null;
-  let shopCategory = "training";
-  let evolveTargetId = null;
   let battleSession = null;
+  let returnScreen = "screen-party";
+
+  const ctx = {
+    get state() {
+      return state;
+    },
+    dispatch,
+    paint() {
+      paintMeters(state);
+    },
+    showScreen,
+    showExplore() {
+      explore.render();
+      showScreen("screen-explore");
+    },
+    showScan() {
+      scan.render();
+      showScreen("screen-scan");
+    },
+    openEvolve(id) {
+      evolve.open(id);
+    },
+    async enterZone(zoneCode) {
+      const res = await dispatch(AppEvents.EXPLORE_ZONE, { zoneCode });
+      if (!res?.ok) return;
+      battle.enter(res.data.session);
+    },
+    getSession: () => battleSession,
+    setSession(session) {
+      battleSession = session;
+    },
+  };
+
+  const party = createPartyView(ctx);
+  const explore = createExploreView(ctx);
+  const battle = createBattleView(ctx);
+  const scan = createScanView(ctx);
+  const shop = createShopView(ctx);
+  const evolve = createEvolveView(ctx);
+  const bag = createBagView(ctx);
+  const onboarding = createOnboardingView(ctx);
 
   async function dispatch(eventName, payload = {}) {
     const results = await bus.emit(eventName, payload);
@@ -28,801 +73,27 @@ export function bootHttpPresentation({ bus, services, catalog }) {
   }
 
   function enterHub() {
-    renderParty();
+    party.render();
     showScreen("screen-party");
-    $("#nav").classList.remove("hidden");
   }
 
-  function openEvolve(creatureId) {
-    evolveTargetId = creatureId;
-    renderEvolve();
-    showScreen("screen-evolve");
-    $("#nav").classList.add("hidden");
+  function openBag() {
+    const active = document.querySelector(".screen.active");
+    if (active && active.id !== "screen-bag") returnScreen = active.id;
+    bag.render();
+    showScreen("screen-bag");
   }
 
-  function renderParty() {
-    paintMeters(state);
-    const grid = $("#party-grid");
-    if (!state.party.length) {
-      grid.innerHTML = `<div class="empty">No beasts yet. Explore the wilds!</div>`;
-      return;
-    }
-    grid.innerHTML = state.party
-      .map(
-        (p) => `
-      <div class="pet-card ${p.id === state.activeCreatureId ? "active" : ""}">
-        <button class="pet-card-main" data-detail="${p.id}">
-          ${avatarHtml(p.species)}
-          <div class="pet-meta">
-            <strong>${escapeHtml(p.nickname)}</strong>
-            <small>${escapeHtml(p.species.name)} · ${escapeHtml(p.species.stageName || `Stage ${p.species.stage}`)}</small>
-          </div>
-          <div class="power-chip">Lv.${p.level}</div>
-        </button>
-        <button class="btn btn-secondary btn-sm pet-evolve-btn" data-evolve-open="${p.id}">
-          Evolve
-        </button>
-      </div>`
-      )
-      .join("");
-    grid.querySelectorAll("[data-detail]").forEach((btn) => {
-      btn.onclick = () => openDetail(Number(btn.dataset.detail));
-    });
-    grid.querySelectorAll("[data-evolve-open]").forEach((btn) => {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        openEvolve(Number(btn.dataset.evolveOpen));
-      };
-    });
+  function closeBag() {
+    const id = returnScreen || "screen-party";
+    if (id === "screen-party") party.render();
+    if (id === "screen-explore") explore.render();
+    if (id === "screen-scan") scan.render();
+    if (id === "screen-shop") shop.render();
+    if (id === "screen-evolve") evolve.render();
+    showScreen(id);
   }
 
-  function gearSlotsMeta() {
-    return (
-      state.gearSlots || [
-        { id: "weapon", label: "Weapon", glyph: "⚔" },
-        { id: "accessory", label: "Accessory", glyph: "✦" },
-        { id: "helmet", label: "Helmet", glyph: "◈" },
-        { id: "chestplate", label: "Chestplate", glyph: "▣" },
-        { id: "gloves", label: "Gloves", glyph: "⬡" },
-        { id: "boots", label: "Boots", glyph: "⊿" },
-      ]
-    );
-  }
-
-  function formatGearStat(stat) {
-    if (!stat) return "";
-    return `<span style="color:${stat.color}">${escapeHtml(stat.name)}</span> +${stat.value}${
-      stat.level ? ` · L${stat.level}` : ""
-    }`;
-  }
-
-  function openGearPiece(creatureId, gearId) {
-    const piece = (state.gear || []).find((g) => g.id === gearId);
-    if (!piece) return;
-    const sheet = $("#detail-sheet");
-    const body = $("#detail-body");
-    const changers =
-      (state.inventory || []).find((i) => i.code === "substat_changer")?.quantity || 0;
-    const coins = state.player?.resources?.coins ?? 0;
-    const canReforge = coins >= piece.reforgeCost;
-    body.innerHTML = `
-      <div class="sheet-handle"></div>
-      <div class="detail-hero">
-        <div class="gear-glyph rarity-${escapeHtml(piece.rarity)}">${escapeHtml(piece.glyph)}</div>
-        <h2>${escapeHtml(piece.displayName)}</h2>
-        <p>${escapeHtml(piece.rarityLabel)} · ${escapeHtml(piece.slotLabel)}</p>
-      </div>
-      <div class="gear-stat-block">
-        <div class="gear-stat main">${formatGearStat(piece.mainStat)} <em>main</em></div>
-        ${
-          piece.fixedSubStat
-            ? `<div class="gear-stat fixed">${formatGearStat(piece.fixedSubStat)} <em>fixed</em></div>`
-            : ""
-        }
-        ${(piece.subStats || [])
-          .map(
-            (s, i) => `
-          <div class="gear-stat sub">
-            ${formatGearStat(s)}
-            ${
-              changers > 0
-                ? `<button class="btn btn-ghost btn-sm" data-change-sub="${i}">Change</button>`
-                : ""
-            }
-          </div>`
-          )
-          .join("")}
-        ${
-          !(piece.subStats || []).length
-            ? `<p class="muted">No random substats yet — reforge to add (up to 4).</p>`
-            : ""
-        }
-      </div>
-      <div class="action-row">
-        <button class="btn btn-primary ${canReforge ? "" : "disabled"}" id="btn-reforge"
-          ${canReforge ? "" : "disabled"}>
-          Reforge · ${piece.reforgeCost}🪙
-        </button>
-        ${
-          piece.equippedCreatureId
-            ? `<button class="btn btn-secondary" id="btn-unequip">Unequip</button>`
-            : creatureId
-              ? `<button class="btn btn-secondary" id="btn-equip-here">Equip</button>`
-              : ""
-        }
-        <button class="btn btn-secondary wide" id="btn-gear-back">Back</button>
-      </div>
-      ${changers ? `<p class="muted">Substat Changers ×${changers}</p>` : ""}`;
-
-    $("#btn-reforge").onclick = async () => {
-      const res = await dispatch(AppEvents.REFORGE_GEAR, { gearId });
-      if (!res?.ok) return;
-      const r = res.data.reforge;
-      toast(
-        r.outcome === "added"
-          ? `New substat: ${r.changed.code.replace(/_/g, " ")}`
-          : `Upgraded ${r.changed.code.replace(/_/g, " ")} → L${r.changed.level}`
-      );
-      openGearPiece(creatureId, gearId);
-    };
-    $("#btn-unequip")?.addEventListener("click", async () => {
-      const res = await dispatch(AppEvents.UNEQUIP_GEAR, { gearId });
-      if (!res?.ok) return;
-      toast("Unequipped");
-      if (creatureId) openDetail(creatureId);
-      else sheet.classList.remove("open");
-    });
-    $("#btn-equip-here")?.addEventListener("click", async () => {
-      const res = await dispatch(AppEvents.EQUIP_GEAR, { gearId, creatureId });
-      if (!res?.ok) return;
-      toast("Equipped");
-      openDetail(creatureId);
-    });
-    body.querySelectorAll("[data-change-sub]").forEach((btn) => {
-      btn.onclick = async () => {
-        if (!confirm("Spend 1 Substat Changer to reroll this line?")) return;
-        const res = await dispatch(AppEvents.CHANGE_GEAR_SUBSTAT, {
-          gearId,
-          subIndex: Number(btn.dataset.changeSub),
-        });
-        if (!res?.ok) return;
-        const c = res.data.change.changed;
-        toast(`Substat → ${c.name || c.code}`);
-        openGearPiece(creatureId, gearId);
-      };
-    });
-    $("#btn-gear-back").onclick = () => {
-      if (creatureId) openDetail(creatureId);
-      else sheet.classList.remove("open");
-    };
-    sheet.classList.add("open");
-  }
-
-  function openSlotPicker(creatureId, slot) {
-    const stash = (state.gear || []).filter(
-      (g) => g.slot === slot && (!g.equippedCreatureId || g.equippedCreatureId === creatureId)
-    );
-    const sheet = $("#detail-sheet");
-    const body = $("#detail-body");
-    const slotMeta = gearSlotsMeta().find((s) => s.id === slot);
-    body.innerHTML = `
-      <div class="sheet-handle"></div>
-      <div class="detail-hero">
-        <h2>${escapeHtml(slotMeta?.label || slot)}</h2>
-        <p>Choose a piece to equip</p>
-      </div>
-      <div class="gear-pick-list">
-        ${
-          stash.length
-            ? stash
-                .map(
-                  (g) => `
-            <button class="gear-pick" data-gear="${g.id}">
-              <strong class="rarity-${escapeHtml(g.rarity)}">${escapeHtml(g.displayName)}</strong>
-              <small>${formatGearStat(g.mainStat)}</small>
-            </button>`
-                )
-                .join("")
-            : `<div class="empty">No ${escapeHtml(slotMeta?.label || slot)} in stash. Buy a chest in the Shop.</div>`
-        }
-      </div>
-      <div class="action-row">
-        <button class="btn btn-secondary wide" id="btn-slot-back">Back</button>
-      </div>`;
-    body.querySelectorAll("[data-gear]").forEach((btn) => {
-      btn.onclick = async () => {
-        const gearId = Number(btn.dataset.gear);
-        const piece = stash.find((g) => g.id === gearId);
-        if (piece?.equippedCreatureId === creatureId) {
-          openGearPiece(creatureId, gearId);
-          return;
-        }
-        const res = await dispatch(AppEvents.EQUIP_GEAR, { gearId, creatureId });
-        if (!res?.ok) return;
-        toast("Equipped");
-        openDetail(creatureId);
-      };
-    });
-    $("#btn-slot-back").onclick = () => openDetail(creatureId);
-    sheet.classList.add("open");
-  }
-
-  function openDetail(id) {
-    const p = state.party.find((c) => c.id === id);
-    if (!p) return;
-    const sheet = $("#detail-sheet");
-    const body = $("#detail-body");
-    const xpLine =
-      p.xpToNext > 0
-        ? `Lv.${p.level} · ${p.experience}/${p.xpToNext} XP`
-        : `Lv.${p.level} · MAX`;
-    const bonuses = p.gearBonuses || {};
-    body.innerHTML = `
-      <div class="sheet-handle"></div>
-      <div class="detail-hero">
-        ${avatarHtml(p.species)}
-        <h2>${escapeHtml(p.nickname)}</h2>
-        <p>${escapeHtml(p.species.name)} · ${escapeHtml(xpLine)}</p>
-        <p>${escapeHtml(p.species.blurb)}</p>
-      </div>
-      <div class="gear-grid">
-        ${gearSlotsMeta()
-          .map((slot) => {
-            const piece = p.equippedGear?.[slot.id];
-            return `
-            <button class="gear-slot ${piece ? "filled rarity-" + escapeHtml(piece.rarity) : "empty"}"
-              data-slot="${slot.id}" data-gear="${piece?.id || ""}">
-              <span class="gear-slot-glyph">${escapeHtml(piece?.glyph || slot.glyph)}</span>
-              <span class="gear-slot-label">${escapeHtml(slot.label)}</span>
-              <span class="gear-slot-main">${
-                piece
-                  ? `+${piece.mainStat.value} ${escapeHtml(piece.mainStat.name)}`
-                  : "Empty"
-              }</span>
-            </button>`;
-          })
-          .join("")}
-      </div>
-      <div class="stat-list plain-stats">
-        ${p.stats
-          .map((s) => {
-            const bonus = bonuses[s.code] || 0;
-            return `
-          <div class="stat-row compact">
-            <div class="name" style="color:${s.color}">${s.name}</div>
-            <div class="val">${s.value}${bonus ? ` <small class="gear-bonus">+${bonus}</small>` : ""}</div>
-          </div>`;
-          })
-          .join("")}
-      </div>
-      <div class="action-row">
-        <button class="btn btn-secondary" id="btn-set-active">Set Active</button>
-        <button class="btn btn-secondary" id="btn-rename">Rename</button>
-        <button class="btn btn-primary" id="btn-detail-evolve">Evolve</button>
-        <button class="btn btn-secondary wide" id="btn-close-detail">Close</button>
-      </div>`;
-    body.querySelectorAll("[data-slot]").forEach((btn) => {
-      btn.onclick = () => {
-        const gearId = Number(btn.dataset.gear);
-        if (gearId) openGearPiece(id, gearId);
-        else openSlotPicker(id, btn.dataset.slot);
-      };
-    });
-    $("#btn-set-active").onclick = async () => {
-      await dispatch(AppEvents.SET_ACTIVE_CREATURE, { creatureId: id });
-      toast(`${p.nickname} leads the party`);
-      sheet.classList.remove("open");
-      renderParty();
-    };
-    $("#btn-rename").onclick = async () => {
-      const name = prompt("Nickname", p.nickname);
-      if (name != null) {
-        await dispatch(AppEvents.RENAME_CREATURE, { creatureId: id, nickname: name });
-        openDetail(id);
-        renderParty();
-      }
-    };
-    $("#btn-detail-evolve").onclick = () => {
-      sheet.classList.remove("open");
-      openEvolve(id);
-    };
-    $("#btn-close-detail").onclick = () => sheet.classList.remove("open");
-    sheet.classList.add("open");
-  }
-
-  function renderExplore() {
-    paintMeters(state);
-    $("#zone-list").innerHTML = state.zones
-      .map(
-        (z) => `
-      <button class="zone-card" data-zone="${z.code}">
-        <h3>${escapeHtml(z.name)}</h3>
-        <p>${escapeHtml(z.vibe)}</p>
-        <div class="cost">Explore</div>
-      </button>`
-      )
-      .join("");
-    $("#zone-list").querySelectorAll(".zone-card").forEach((btn) => {
-      btn.onclick = async () => {
-        const res = await dispatch(AppEvents.EXPLORE_ZONE, { zoneCode: btn.dataset.zone });
-        if (!res?.ok) return;
-        battleSession = res.data.session;
-        paintBattle("A wild beast appears!");
-        showScreen("screen-battle");
-        $("#nav").classList.add("hidden");
-      };
-    });
-  }
-
-  function paintBattle(logLine) {
-    const b = battleSession;
-    const youPct = Math.max(0, (b.youHp / b.youMax) * 100);
-    const foePct = Math.max(0, (b.wildHp / b.wildMax) * 100);
-    $("#battle-root").innerHTML = `
-      <div class="section-head">
-        <h1>${escapeHtml(b.zone.display_name || b.zone.name)}</h1>
-        <span>Battle</span>
-      </div>
-      <div class="battle">
-        <div class="arena">
-          <div class="fighter foe">
-            <div class="finfo">
-              <strong>${escapeHtml(b.wild.nickname)}</strong>
-              <small>Lv.${b.wild.level || 1}</small>
-              <div class="hpbar foe"><span style="width:${foePct}%"></span></div>
-            </div>
-            ${avatarHtml(b.wild.species)}
-          </div>
-          <div class="fighter you">
-            ${avatarHtml(b.you.species)}
-            <div class="finfo">
-              <strong>${escapeHtml(b.you.nickname)}</strong>
-              <small>Lv.${b.you.level || 1}</small>
-              <div class="hpbar"><span style="width:${youPct}%"></span></div>
-            </div>
-          </div>
-        </div>
-        <div class="battle-log" id="battle-log"></div>
-        <div class="battle-actions" id="battle-actions">
-          <button class="btn btn-primary" data-act="strike">Strike<small>Solid hit</small></button>
-          <button class="btn btn-secondary" data-act="guard">Guard<small>Brace</small></button>
-          <button class="btn btn-secondary" data-act="burst">Burst<small>Risky</small></button>
-          ${
-            (state.inventory || []).some((i) => i.kind === "consumable")
-              ? `<button class="btn btn-secondary" id="btn-battle-item">Item<small>Bag</small></button>`
-              : ""
-          }
-        </div>
-        <div class="result-banner" id="result-banner"></div>
-      </div>`;
-    if (logLine) appendLog(logLine);
-    $("#battle-actions").querySelectorAll("[data-act]").forEach((btn) => {
-      btn.onclick = () => doTurn(btn.dataset.act);
-    });
-    $("#btn-battle-item")?.addEventListener("click", () => openBattleItems());
-  }
-
-  function openBattleItems() {
-    const consumables = (state.inventory || []).filter((i) => i.kind === "consumable");
-    if (!consumables.length) {
-      toast("No battle items");
-      return;
-    }
-    const pick = consumables
-      .map((i) => `${i.itemId}: ${i.name} ×${i.quantity}`)
-      .join("\n");
-    const raw = prompt(`Use which item?\n${pick}\n\nEnter item id:`);
-    if (raw == null) return;
-    const itemId = Number(raw);
-    if (!itemId) return;
-    useBattleItem(itemId);
-  }
-
-  async function useBattleItem(itemId) {
-    if (!battleSession || battleSession.over) return;
-    const res = await dispatch(AppEvents.USE_BATTLE_ITEM, {
-      battleSession,
-      itemId,
-    });
-    if (!res?.ok) return;
-    battleSession = res.data.session;
-    const youBar = $(".fighter.you .hpbar > span");
-    if (youBar) {
-      youBar.style.width = `${Math.max(0, (battleSession.youHp / battleSession.youMax) * 100)}%`;
-    }
-    (res.data.itemUse.log || []).forEach((l) => appendLog(l.text));
-  }
-
-  function appendLog(text) {
-    const log = $("#battle-log");
-    if (!log) return;
-    const line = document.createElement("div");
-    line.className = "line";
-    line.textContent = text;
-    log.prepend(line);
-  }
-
-  async function doTurn(actionCode) {
-    if (!battleSession || battleSession.over) return;
-    const res = await dispatch(AppEvents.BATTLE_ACTION, {
-      battleSession,
-      actionCode,
-    });
-    if (!res?.ok) return;
-    battleSession = res.data.session;
-    const turn = res.data.turn;
-    const youBar = $(".fighter.you .hpbar > span");
-    const foeBar = $(".fighter.foe .hpbar > span");
-    if (youBar) youBar.style.width = `${Math.max(0, (battleSession.youHp / battleSession.youMax) * 100)}%`;
-    if (foeBar) foeBar.style.width = `${Math.max(0, (battleSession.wildHp / battleSession.wildMax) * 100)}%`;
-    turn.log.forEach((l) => appendLog(l.text));
-
-    if (turn.result) {
-      battleSession.over = true;
-      $("#battle-actions").classList.add("hidden");
-      const banner = $("#result-banner");
-      banner.classList.add("show");
-      if (turn.result.outcome === "win") {
-        const scan = turn.result.scan;
-        const xp = turn.result.xp;
-        const scanLine = scan
-          ? `Scan ${scan.speciesName}: ${scan.previousLevel}% → ${scan.scanLevel}%`
-          : "";
-        const xpLine = xp
-          ? xp.levelsGained > 0
-            ? `+${xp.xpGain} XP · Level up! Lv.${xp.level}`
-            : `+${xp.xpGain} XP`
-          : "";
-        const gainsLine = xp?.statGains?.length
-          ? xp.statGains.map((g) => `${g.name} +${g.gain}`).join(" · ")
-          : "";
-        banner.innerHTML = `
-          <h3>Victory</h3>
-          <p>+${turn.result.coinGain} coins${xpLine ? ` · ${escapeHtml(xpLine)}` : ""}</p>
-          ${gainsLine ? `<p class="level-gains">${escapeHtml(gainsLine)}</p>` : ""}
-          ${scanLine ? `<p class="scan-toast">${escapeHtml(scanLine)}${scan.canClaim ? " · ready to claim" : ""}</p>` : ""}
-          <div class="action-row">
-            ${
-              scan?.canClaim
-                ? `<button class="btn btn-primary" id="btn-to-scan">Open Scan</button>`
-                : ""
-            }
-            <button class="btn btn-secondary ${scan?.canClaim ? "" : "wide"}" id="btn-leave">Return</button>
-          </div>`;
-        $("#btn-to-scan")?.addEventListener("click", () => {
-          battleSession = null;
-          renderScan();
-          showScreen("screen-scan");
-        });
-        $("#btn-leave").onclick = leaveBattle;
-      } else {
-        banner.classList.add("lose");
-        banner.innerHTML = `
-          <h3>Defeated</h3>
-          <p>Shop for boosts, then try again.</p>
-          <button class="btn btn-secondary wide" id="btn-leave">Return</button>`;
-        $("#btn-leave").onclick = leaveBattle;
-      }
-    }
-  }
-
-  function leaveBattle() {
-    battleSession = null;
-    renderExplore();
-    showScreen("screen-explore");
-  }
-
-  function renderScan() {
-    paintMeters(state);
-    const list = $("#scan-list");
-    const scans = state.scans || [];
-    if (!scans.length) {
-      list.innerHTML = `
-        <div class="empty">
-          <p>Defeat wild beasts to fill scan data. At 100%, claim them here.</p>
-          <button class="btn btn-primary wide" id="btn-scan-explore" style="margin-top:16px">Explore the wilds</button>
-        </div>`;
-      $("#btn-scan-explore").onclick = () => {
-        renderExplore();
-        showScreen("screen-explore");
-      };
-      return;
-    }
-    list.innerHTML = scans
-      .map((s) => {
-        const pct = Math.min(100, s.scanLevel);
-        return `
-        <div class="scan-card ${s.canClaim ? "ready" : ""} ${s.claimed ? "claimed" : ""}">
-          <div class="scan-head">
-            ${avatarHtml(s.species)}
-            <div>
-              <strong>${escapeHtml(s.species.name)}</strong>
-              <small>${escapeHtml(s.species.element)} · ${escapeHtml(s.species.stageName)}</small>
-            </div>
-            <div class="power-chip">${pct}%</div>
-          </div>
-          <div class="scan-bar"><span style="width:${pct}%"></span></div>
-          <p class="scan-blurb">${escapeHtml(s.species.blurb)}</p>
-          ${
-            s.canClaim
-              ? `<button class="btn btn-primary wide" data-claim="${s.speciesId}">Obtain</button>`
-              : s.claimed
-                ? `<div class="scan-status">Obtained</div>`
-                : `<div class="scan-status">Keep battling to complete the scan</div>`
-          }
-        </div>`;
-      })
-      .join("");
-    list.querySelectorAll("[data-claim]").forEach((btn) => {
-      btn.onclick = async () => {
-        const res = await dispatch(AppEvents.CLAIM_SCAN, {
-          speciesId: Number(btn.dataset.claim),
-        });
-        if (res?.ok) {
-          toast(`Obtained ${res.data.claimed.nickname}!`);
-          renderScan();
-        }
-      };
-    });
-  }
-
-  function renderShop() {
-    paintMeters(state);
-    const tabs = $("#shop-tabs");
-    const pick = $("#shop-pick");
-    const list = $("#shop-list");
-    const categories = state.shopCategories?.length
-      ? state.shopCategories
-      : [
-          { id: "training", label: "Training" },
-          { id: "items", label: "Items" },
-          { id: "equipment", label: "Equipment" },
-        ];
-    if (!categories.some((c) => c.id === shopCategory)) shopCategory = categories[0].id;
-
-    tabs.innerHTML = categories
-      .map(
-        (c) => `
-      <button class="shop-tab ${c.id === shopCategory ? "active" : ""}" data-cat="${c.id}">
-        ${escapeHtml(c.label)}
-      </button>`
-      )
-      .join("");
-    tabs.querySelectorAll("[data-cat]").forEach((btn) => {
-      btn.onclick = () => {
-        shopCategory = btn.dataset.cat;
-        renderShop();
-      };
-    });
-
-    const needsTarget = shopCategory === "training";
-    if (needsTarget) {
-      if (!state.party.length) {
-        pick.innerHTML = "";
-        list.innerHTML = `<div class="empty">Claim a beast from Scan before buying training boosts.</div>`;
-        return;
-      }
-      if (!shopTargetId || !state.party.find((p) => p.id === shopTargetId)) {
-        shopTargetId = state.activeCreatureId || state.party[0].id;
-      }
-      pick.innerHTML = state.party
-        .map(
-          (p) => `
-        <button class="train-chip ${p.id === shopTargetId ? "selected" : ""}" data-id="${p.id}">
-          ${avatarHtml(p.species)}
-          <span>${escapeHtml(p.nickname)} · Lv.${p.level}</span>
-        </button>`
-        )
-        .join("");
-      pick.querySelectorAll(".train-chip").forEach((btn) => {
-        btn.onclick = () => {
-          shopTargetId = Number(btn.dataset.id);
-          renderShop();
-        };
-      });
-    } else {
-      pick.innerHTML = "";
-    }
-
-    const pet = state.party.find((p) => p.id === shopTargetId);
-    const coins = state.player?.resources?.coins ?? 0;
-    const listings = (state.shop || []).filter((i) => i.category === shopCategory);
-    if (!listings.length) {
-      list.innerHTML = `<div class="empty">Nothing in this aisle yet.</div>`;
-      return;
-    }
-    list.innerHTML = listings
-      .map((item) => {
-        const stat = pet?.stats?.find((s) => s.statId === item.statId);
-        const locked = item.available === false;
-        const afford = !locked && coins >= item.price;
-        return `
-        <button class="shop-item ${afford ? "" : "disabled"}" data-item="${item.itemId}"
-          ${afford ? "" : "disabled"}>
-          <div>
-            <strong>${escapeHtml(item.name)}</strong>
-            <small>${escapeHtml(item.description)}${
-              shopCategory === "training" && stat ? ` · now ${stat.value}` : ""
-            }${locked ? " · Coming soon" : ""}</small>
-          </div>
-          <div class="shop-price">${locked ? "—" : `${item.price}🪙`}</div>
-        </button>`;
-      })
-      .join("");
-    list.querySelectorAll("[data-item]").forEach((btn) => {
-      btn.onclick = async () => {
-        const res = await dispatch(AppEvents.BUY_SHOP_ITEM, {
-          itemId: Number(btn.dataset.item),
-          creatureId: shopCategory === "training" ? shopTargetId : null,
-        });
-        if (!res?.ok) return;
-        const p = res.data.purchase;
-        if (p.kind === "training") {
-          toast(`+${p.gain} ${p.stat?.display_name || p.stat?.name || "stat"}`);
-        } else if (p.kind === "gear_chest" && p.gear) {
-          toast(`Opened ${p.gear.displayName}`);
-        } else if (p.kind === "gear_tool") {
-          toast(`Bought ${p.name}`);
-        } else if (p.kind === "items") {
-          toast(`Bought ${p.name}`);
-        }
-        renderShop();
-      };
-    });
-  }
-
-  function renderTreeNode(node, depth = 0) {
-    if (!node) return "";
-    const cls = [
-      "evo-node",
-      node.isCurrent ? "current" : "",
-      node.onLineage ? "on-lineage" : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
-    const kids = (node.branches || [])
-      .map(
-        (b) => `
-        <div class="evo-branch">
-          <div class="evo-branch-label">${escapeHtml(b.label || "")}</div>
-          ${renderTreeNode(b.node, depth + 1)}
-        </div>`
-      )
-      .join("");
-    return `
-      <div class="${cls}" style="--depth:${depth}">
-        <div class="evo-node-card">
-          ${avatarHtml(node)}
-          <strong>${escapeHtml(node.name)}</strong>
-          <small>${escapeHtml(node.stageName)}</small>
-        </div>
-        ${kids ? `<div class="evo-children">${kids}</div>` : ""}
-      </div>`;
-  }
-
-  function renderEvolve() {
-    paintMeters(state);
-    const list = $("#evo-list");
-    const p = state.party.find((c) => c.id === evolveTargetId) || state.party[0];
-    if (!p) {
-      list.innerHTML = `<div class="empty">No beasts to evolve yet.</div>`;
-      return;
-    }
-    evolveTargetId = p.id;
-    const evo = p.evolution;
-    const lineageTrail = (evo.lineageSpecies || [])
-      .map((s) => `${s.glyph} ${s.name}`)
-      .join(" → ");
-    const branchesHtml = (evo.branches || [])
-      .map((b) => {
-        const reqs = (b.requirements || [])
-          .map(
-            (r) => `
-            <div class="req ${r.met ? "met" : ""}">
-              <span>${escapeHtml(r.label)}</span>
-              <span>${r.have} / ${r.needed}</span>
-            </div>`
-          )
-          .join("");
-        return `
-          <div class="branch-card ${b.ready ? "ready" : ""}">
-            <div class="branch-head">
-              ${avatarHtml(b.next)}
-              <div>
-                <strong>${escapeHtml(b.next.name)}</strong>
-                <small>${escapeHtml(b.label || "")} · ${escapeHtml(b.next.stageName)}</small>
-              </div>
-            </div>
-            <div class="req-list">${reqs}</div>
-            <button class="btn ${b.ready ? "btn-primary" : "btn-secondary"} wide"
-              data-evolve="${p.id}" data-path="${b.pathId}" ${b.ready ? "" : "disabled"}>
-              ${b.ready ? `Evolve → ${escapeHtml(b.next.name)}` : "Requirements unmet"}
-            </button>
-          </div>`;
-      })
-      .join("");
-
-    list.innerHTML = `
-      <div class="evo-card ${evo.ready ? "ready" : ""}">
-        <div class="evo-card-head">
-          ${avatarHtml(p.species)}
-          <div>
-            <strong>${escapeHtml(p.nickname)}</strong>
-            <small>Lv.${p.level} · ${escapeHtml(p.species.stageName)} · ${escapeHtml(p.species.name)}</small>
-          </div>
-        </div>
-        <div class="lineage-trail">${escapeHtml(lineageTrail || p.species.name)}</div>
-        ${
-          evo.branches?.length
-            ? `<h3 class="evo-subhead">Branches</h3><div class="branch-grid">${branchesHtml}</div>`
-            : `<p class="empty" style="padding:12px 0">Apex form — no further evolutions.</p>`
-        }
-        ${
-          evo.canDevolve
-            ? `<button class="btn btn-danger wide" data-devolve="${p.id}" style="margin-top:12px">
-                Devolve → ${escapeHtml(evo.ancestor.name)}
-                <small style="display:block;font-weight:500;opacity:.8">Resets stats to ${escapeHtml(evo.ancestor.name)} base</small>
-              </button>`
-            : ""
-        }
-        <h3 class="evo-subhead">Evolution tree</h3>
-        <div class="evo-tree" aria-label="Evolution chain">
-          ${renderTreeNode(evo.tree)}
-        </div>
-      </div>`;
-
-    list.querySelectorAll("[data-evolve]").forEach((btn) => {
-      btn.onclick = async () => {
-        const res = await dispatch(AppEvents.EVOLVE_CREATURE, {
-          creatureId: Number(btn.dataset.evolve),
-          pathId: Number(btn.dataset.path),
-        });
-        if (res?.ok) {
-          toast(`${res.data.evolution.from} → ${res.data.evolution.to}!`);
-          renderEvolve();
-        }
-      };
-    });
-    list.querySelectorAll("[data-devolve]").forEach((btn) => {
-      btn.onclick = async () => {
-        const pet = state.party.find((x) => x.id === Number(btn.dataset.devolve));
-        const okConfirm = confirm(
-          `Devolve ${pet?.nickname} to ${pet?.evolution.ancestor.name}? Stats reset to base.`
-        );
-        if (!okConfirm) return;
-        const res = await dispatch(AppEvents.DEVOLVE_CREATURE, {
-          creatureId: Number(btn.dataset.devolve),
-        });
-        if (res?.ok) {
-          toast(`${res.data.devolution.from} → ${res.data.devolution.to} (stats reset)`);
-          renderEvolve();
-        }
-      };
-    });
-  }
-
-  function renderStarters() {
-    const grid = $("#starter-grid");
-    grid.innerHTML = state.starters
-      .map(
-        (pet) => `
-      <button class="starter ${selectedStarter === pet.id ? "selected" : ""}" data-id="${pet.id}">
-        ${avatarHtml(pet)}
-        <strong>${escapeHtml(pet.name)}</strong>
-        <small>${escapeHtml(pet.element)}</small>
-      </button>`
-      )
-      .join("");
-    grid.querySelectorAll(".starter").forEach((btn) => {
-      btn.onclick = () => {
-        selectedStarter = Number(btn.dataset.id);
-        renderStarters();
-        $("#btn-begin").disabled = false;
-      };
-    });
-  }
-
-  // bindings
   $("#btn-continue")?.addEventListener("click", () => {
     if (services.playerService.hasSave()) {
       state = services.getAppState();
@@ -838,29 +109,31 @@ export function bootHttpPresentation({ bus, services, catalog }) {
     const name = $("#player-name").value.trim();
     const res = await dispatch(AppEvents.CREATE_PLAYER, { name });
     if (!res?.ok) return;
-    selectedStarter = null;
-    $("#btn-begin").disabled = true;
-    renderStarters();
+    onboarding.resetStarter();
+    onboarding.renderStarters();
     showScreen("screen-starter");
   });
   $("#btn-begin").addEventListener("click", async () => {
-    if (!selectedStarter) return;
-    const res = await dispatch(AppEvents.SELECT_STARTER, { speciesId: selectedStarter });
+    const speciesId = onboarding.selectedId();
+    if (!speciesId) return;
+    const res = await dispatch(AppEvents.SELECT_STARTER, { speciesId });
     if (!res?.ok) return;
     toast("Your journey begins");
     enterHub();
   });
   $("#btn-evo-back")?.addEventListener("click", () => {
-    renderParty();
+    party.render();
     showScreen("screen-party");
   });
+  $("#btn-bag-back")?.addEventListener("click", closeBag);
+  $$(".btn-bag").forEach((btn) => btn.addEventListener("click", openBag));
   $$(".nav-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const tab = btn.dataset.tab;
-      if (tab === "party") renderParty();
-      if (tab === "explore") renderExplore();
-      if (tab === "scan") renderScan();
-      if (tab === "shop") renderShop();
+      if (tab === "party") party.render();
+      if (tab === "explore") explore.render();
+      if (tab === "scan") scan.render();
+      if (tab === "shop") shop.render();
       showScreen(`screen-${tab}`);
     });
   });
@@ -872,13 +145,15 @@ export function bootHttpPresentation({ bus, services, catalog }) {
   let gi = 0;
   setInterval(() => {
     gi = (gi + 1) % glyphs.length;
-    $("#title-glyph").textContent = glyphs[gi].glyph;
-    $("#title-orb").style.setProperty("--orb-hue", glyphs[gi].hue);
+    const glyph = $("#title-glyph");
+    const orb = $("#title-orb");
+    if (!glyph || !orb || !glyphs.length) return;
+    glyph.textContent = glyphs[gi].glyph;
+    orb.style.setProperty("--orb-hue", glyphs[gi].hue);
   }, 3200);
 
   state = services.getAppState();
   $("#btn-continue").classList.toggle("hidden", !services.playerService.hasSave());
   showScreen("screen-title");
-  $("#nav").classList.add("hidden");
   paintMeters(state);
 }

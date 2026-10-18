@@ -198,8 +198,17 @@ CREATE TABLE zones (
   display_name VARCHAR(48) NOT NULL,
   vibe VARCHAR(160) NOT NULL,
   min_player_level INTEGER NOT NULL DEFAULT 1,
+  region_code VARCHAR(32) NOT NULL DEFAULT 'wilds',
+  region_name VARCHAR(48) NOT NULL DEFAULT 'Wilds',
+  area_label VARCHAR(8) NOT NULL DEFAULT '1-1',
+  min_wild_level INTEGER NOT NULL DEFAULT 1,
+  max_wild_level INTEGER NOT NULL DEFAULT 2,
+  is_boss INTEGER NOT NULL DEFAULT 0,
+  unlock_after_zone_id INTEGER,
+  sort_order INTEGER NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL,
-  updated_at DATETIME NOT NULL
+  updated_at DATETIME NOT NULL,
+  FOREIGN KEY (unlock_after_zone_id) REFERENCES zones(id)
 );
 
 -- Weighted encounter table per zone (data-driven wild spawns).
