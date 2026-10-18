@@ -67,12 +67,13 @@ export function scaleStatForLevel(statId, baseValue, level) {
 }
 
 /**
- * Roll a wild encounter level relative to the player's creature.
+ * @deprecated Wild levels come from the area band in EncounterRules.rollLevelInBand.
+ * Stage is ignored so a leftover caller cannot jump a level-1 pet to level 6+.
  */
-export function rollWildLevel(playerLevel, stage, random) {
-  const stageOffset = { 1: -1, 2: 2, 3: 6, 4: 12, 5: 20 }[stage] ?? 0;
-  const jitter = random.intBelow(5) - 2; // -2..+2
-  return Math.max(1, Math.min(MAX_CREATURE_LEVEL, (playerLevel || 1) + stageOffset + jitter));
+export function rollWildLevel(playerLevel, _stage, random) {
+  const base = Math.max(1, playerLevel || 1);
+  const jitter = random.intBelow(3) - 1; // -1..+1
+  return Math.max(1, Math.min(MAX_CREATURE_LEVEL, base + jitter));
 }
 
 /**

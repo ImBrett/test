@@ -9,6 +9,7 @@ import {
   slotLabel,
   sumGearBonuses,
 } from "../../Rules/GearRules.js";
+import { isZoneUnlocked } from "../../Rules/EncounterRules.js";
 
 export function toStatDto(row) {
   return {
@@ -207,12 +208,29 @@ export function toShopListingDto(listing) {
   };
 }
 
-export function toZoneDto(zone) {
+export function toZoneDto(zone, catalog = null, clearedIds = []) {
+  const encounters = catalog?.encountersForZone?.(zone.id) || [];
+  const species = [];
+  for (const row of encounters) {
+    const sp = catalog.speciesById(row.species_id);
+    if (sp && !species.includes(sp.display_name)) species.push(sp.display_name);
+  }
+  const cleared = clearedIds.includes(zone.id);
   return {
     id: zone.id,
     code: zone.code,
-    name: zone.display_name,
+    name: zone.display_name || zone.name,
     vibe: zone.vibe,
+    region: zone.region_code || "wilds",
+    regionName: zone.region_name || "Wilds",
+    label: zone.area_label || "",
+    minLevel: zone.min_wild_level ?? 1,
+    maxLevel: zone.max_wild_level ?? zone.min_wild_level ?? 1,
+    isBoss: !!zone.is_boss,
+    species,
+    unlocked: isZoneUnlocked(zone, clearedIds),
+    cleared,
+    sortOrder: zone.sort_order ?? zone.id,
   };
 }
 
@@ -225,6 +243,7 @@ export function toInventoryDto(rows, catalog) {
         itemId: r.item_id,
         code: item.code,
         name: item.display_name,
+        description: item.description || "",
         kind: item.item_kind,
         quantity: r.quantity,
       };
@@ -262,6 +281,7 @@ export function toAppStateDto({
   shop = [],
   catalog,
   events,
+  clearedZoneIds = [],
 }) {
   const active = creatures.find((c) => c.isActive) || creatures[0] || null;
   return {
@@ -281,7 +301,10 @@ export function toAppStateDto({
       id: c.id,
       label: c.label,
     })),
-    zones: catalog.zones.map(toZoneDto),
+    zones: catalog.zones
+      .slice()
+      .sort((a, b) => (a.sort_order ?? a.id) - (b.sort_order ?? b.id))
+      .map((zone) => toZoneDto(zone, catalog, clearedZoneIds)),
     starters: catalog.starterSpeciesIds().map((id) => {
       const s = catalog.speciesById(id);
       return {

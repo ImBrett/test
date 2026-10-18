@@ -110,8 +110,11 @@ raw = f(attacker.stats, move.power, payload, matchup)
 
 ### Encounters
 ```
-pick weighted species from zone_encounters where stage in [min,max]
+area unlocks after a win in the previous area (the first area starts open)
+pick weighted species from zone_encounters
+wild level = uniform integer in [area.min_wild_level, area.max_wild_level]
 scale base stats by uniform(variance_min, variance_max)
+boss areas use one species at a fixed level and pay double coins
 ```
 
 ### Shop training

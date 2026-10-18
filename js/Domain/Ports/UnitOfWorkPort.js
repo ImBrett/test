@@ -40,6 +40,8 @@
  * @property {(action: object) => void} insertBattleAction
  * @property {(event: object) => void} appendDomainEvent
  * @property {(key: string) => number} nextId
+ * @property {() => number[]} clearedZoneIds
+ * @property {(zoneId: number) => void} markZoneCleared
  * @property {() => object[]} recentDomainEvents
  */
 

@@ -470,43 +470,5 @@ export const evolutionRequirements = [
   threshold_value,
 }));
 
-export const zones = [
-  [1, "cinderwaste", "Cinderwaste", "Ash drifts over cracked Ignis earth."],
-  [2, "mistveil", "Mistveil", "Fog curls between Veil tidepools."],
-  [3, "skyshear", "Skyshear", "Aether winds shear the cliff edge."],
-  [4, "stoneheart", "Stoneheart", "Terra ridges hum underfoot."],
-  [5, "nightwell", "Nightwell", "Umbral dark pools without a bottom."],
-  [6, "dawnfield", "Dawnfield", "Radiance light pools in the grass."],
-  [7, "crossroads", "Crossroads", "All six affinities wander here."],
-].map(([id, code, display_name, vibe]) => ({
-  id, code, display_name, vibe, min_player_level: 1, name: display_name,
-}));
-
-let zeId = 1;
-export const zoneEncounters = [
-  // Cinderwaste — Ignis
-  [1, 1, 35, 1], [1, 2, 30, 2], [1, 3, 12, 3], [1, 4, 12, 3], [1, 5, 11, 3],
-  // Mistveil — Veil
-  [2, 12, 35, 1], [2, 13, 30, 2], [2, 14, 12, 3], [2, 15, 12, 3], [2, 16, 11, 3],
-  // Skyshear — Aether
-  [3, 23, 35, 1], [3, 24, 30, 2], [3, 25, 12, 3], [3, 26, 12, 3], [3, 27, 11, 3],
-  // Stoneheart — Terra
-  [4, 34, 35, 1], [4, 35, 30, 2], [4, 36, 12, 3], [4, 37, 12, 3], [4, 38, 11, 3],
-  // Nightwell — Umbral
-  [5, 45, 35, 1], [5, 46, 30, 2], [5, 47, 12, 3], [5, 48, 12, 3], [5, 49, 11, 3],
-  // Dawnfield — Radiance
-  [6, 56, 35, 1], [6, 57, 30, 2], [6, 58, 12, 3], [6, 59, 12, 3], [6, 60, 11, 3],
-  // Crossroads — mixed hatchlings / fledglings
-  [7, 1, 12, 1], [7, 12, 12, 1], [7, 23, 12, 1], [7, 34, 12, 1], [7, 45, 12, 1], [7, 56, 12, 1],
-  [7, 2, 8, 2], [7, 13, 8, 2], [7, 24, 8, 2], [7, 35, 7, 2], [7, 46, 7, 2], [7, 57, 7, 2],
-].map(([zone_id, species_id, weight, stage]) => ({
-  id: zeId++,
-  zone_id,
-  species_id,
-  weight,
-  min_stage: stage,
-  max_stage: stage,
-  stat_variance_min: stage <= 2 ? 0.72 : 0.8,
-  stat_variance_max: stage <= 2 ? 1.0 : 1.05,
-}));
+export { zones, zoneEncounters } from "./areas.js";
 
