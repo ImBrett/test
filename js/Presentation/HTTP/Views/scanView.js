@@ -26,17 +26,21 @@ export function createScanView(ctx) {
               <strong>${escapeHtml(s.species.name)}</strong>
               <small>${escapeHtml(s.species.element)} · ${escapeHtml(s.species.stageName)}</small>
             </div>
-            <div class="power-chip">${pct}%</div>
           </div>
-          <div class="scan-bar"><span style="width:${pct}%"></span></div>
-          <p class="scan-blurb">${escapeHtml(s.species.blurb)}</p>
-          ${
-            s.canClaim
-              ? `<button class="btn btn-primary wide" data-claim="${s.speciesId}">Obtain</button>`
-              : s.claimed
-                ? `<div class="scan-status">Obtained</div>`
-                : `<div class="scan-status">Keep battling to complete the scan</div>`
-          }
+          <div class="scan-progress">
+            <div class="scan-bar"><span style="width:${pct}%"></span></div>
+            <p class="scan-blurb">${escapeHtml(s.species.blurb)}</p>
+          </div>
+          <div class="scan-action">
+            <div class="power-chip">${pct}%</div>
+            ${
+              s.canClaim
+                ? `<button class="btn btn-primary" data-claim="${s.speciesId}">Claim</button>`
+                : s.claimed
+                  ? `<div class="scan-status">Claimed</div>`
+                  : `<div class="scan-status">In progress</div>`
+            }
+          </div>
         </div>`;
       })
       .join("");

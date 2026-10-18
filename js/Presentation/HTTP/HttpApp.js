@@ -130,6 +130,10 @@ export function bootHttpPresentation({ bus, services, catalog }) {
   $$(".nav-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const tab = btn.dataset.tab;
+      if (tab === "bag") {
+        openBag();
+        return;
+      }
       if (tab === "party") party.render();
       if (tab === "explore") explore.render();
       if (tab === "scan") scan.render();

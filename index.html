@@ -2,11 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"
-    />
-    <meta name="theme-color" content="#120c10" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0c0a10" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -18,24 +15,34 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%231a1218'/%3E%3Ctext y='.9em' font-size='70' x='50%25' text-anchor='middle'%3E🌱%3C/text%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='8' fill='%2314111a'/%3E%3Crect x='8' y='8' width='8' height='84' fill='%237235ff'/%3E%3Ctext y='.72em' font-size='64' x='58%25' text-anchor='middle' fill='%23f3f0f7' font-family='sans-serif'%3EM%3C/text%3E%3C/svg%3E" />
   </head>
   <body>
     <div class="app">
-      <!-- TITLE -->
-      <section class="screen active" id="screen-title">
-        <div class="hero">
-          <div class="hero-sky" aria-hidden="true"></div>
-          <div class="hero-creature">
-            <div class="creature-orb" id="title-orb" style="--orb-hue: 330">
-              <div class="creature-glyph" id="title-glyph">🌳</div>
-            </div>
+      <nav class="nav hidden" id="nav" aria-label="Stations">
+        <div class="rail-brand">
+          <span class="rail-mark" aria-hidden="true">M</span>
+          <div>
+            <strong>Morph</strong>
+            <small>Command</small>
           </div>
-          <div class="brand-block">
+        </div>
+        <button class="nav-btn active" data-tab="party" type="button"><span class="ico">◈</span><span class="nav-label">Party</span></button>
+        <button class="nav-btn" data-tab="explore" type="button"><span class="ico">◎</span><span class="nav-label">Explore</span></button>
+        <button class="nav-btn" data-tab="scan" type="button"><span class="ico">◌</span><span class="nav-label">Scan</span></button>
+        <button class="nav-btn" data-tab="shop" type="button"><span class="ico">⬡</span><span class="nav-label">Shop</span></button>
+        <button class="nav-btn" data-tab="bag" type="button"><span class="ico">▣</span><span class="nav-label">Bag</span></button>
+      </nav>
+
+      <main class="workspace">
+      <section class="screen screen-gate active" id="screen-title">
+        <div class="gate">
+          <div class="gate-copy">
+            <p class="kicker">Campaign desk</p>
             <h1 class="brand">Morph</h1>
             <p class="tagline">Scan the wilds. Spend coins. Evolve through the stages.</p>
             <div class="hero-actions">
@@ -43,12 +50,18 @@
               <button class="btn btn-secondary" id="btn-new-game">New Journey</button>
             </div>
           </div>
+          <div class="gate-preview">
+            <div class="creature-orb" id="title-orb" style="--orb-hue: 330">
+              <div class="creature-glyph" id="title-glyph">🌳</div>
+            </div>
+            <p class="gate-caption">Six affinities. Five stages. The desk keeps the ledger.</p>
+          </div>
         </div>
       </section>
 
-      <!-- CREATE -->
-      <section class="screen" id="screen-create">
-        <div class="panel" style="margin-top: 18vh">
+      <section class="screen screen-gate" id="screen-create">
+        <div class="panel gate-panel">
+          <p class="kicker">New operator</p>
           <h2>Who walks the wilds?</h2>
           <p class="lead">Your name is carved into every encounter.</p>
           <div class="field">
@@ -60,132 +73,119 @@
               placeholder="Ash, Nova, Kai…"
             />
           </div>
-          <button class="btn btn-primary wide" id="btn-to-starter" style="width: 100%">
+          <button class="btn btn-primary wide" id="btn-to-starter">
             Choose a starter
           </button>
         </div>
       </section>
 
-      <!-- STARTER -->
-      <section class="screen" id="screen-starter">
-        <div class="panel" style="margin-top: 8vh">
+      <section class="screen screen-gate" id="screen-starter">
+        <div class="panel gate-panel gate-panel-wide">
+          <p class="kicker">First beast</p>
           <h2>Pick your first beast</h2>
           <p class="lead">Six affinities. Five stages. Branches decide their fate.</p>
           <div class="starter-grid" id="starter-grid"></div>
-          <button class="btn btn-primary wide" id="btn-begin" style="width: 100%; margin-top: 16px" disabled>
+          <button class="btn btn-primary wide" id="btn-begin" disabled>
             Begin
           </button>
         </div>
       </section>
 
-      <!-- PARTY -->
       <section class="screen" id="screen-party">
         <header class="topbar">
           <div class="who who-name">Traveler</div>
           <div class="meters">
             <button class="btn-bag" type="button">Bag</button>
-            <div class="meter coins"><span class="dot"></span><span class="meter-coins">0</span></div>
+            <div class="meter coins"><span class="meter-label">Coins</span><span class="meter-coins">0</span></div>
           </div>
         </header>
         <div class="section-head">
           <h1>Party</h1>
-          <span>Tap a beast · Evolve from here</span>
+          <span>Select a beast to inspect stats or open evolution.</span>
         </div>
         <div class="pet-grid" id="party-grid"></div>
       </section>
 
-      <!-- EXPLORE -->
       <section class="screen" id="screen-explore">
         <header class="topbar">
           <div class="who who-name">Traveler</div>
           <div class="meters">
             <button class="btn-bag" type="button">Bag</button>
-            <div class="meter coins"><span class="dot"></span><span class="meter-coins">0</span></div>
+            <div class="meter coins"><span class="meter-label">Coins</span><span class="meter-coins">0</span></div>
           </div>
         </header>
         <div class="section-head">
           <h1>Explore</h1>
-          <span>Wild encounters · XP & scans</span>
+          <span>Clear an area to unlock the next. Boss areas pay double coins.</span>
         </div>
         <div class="zone-list" id="zone-list"></div>
       </section>
 
-      <!-- BATTLE -->
       <section class="screen" id="screen-battle">
         <div id="battle-root"></div>
       </section>
 
-      <!-- SCAN -->
       <section class="screen" id="screen-scan">
         <header class="topbar">
           <div class="who who-name">Traveler</div>
           <div class="meters">
             <button class="btn-bag" type="button">Bag</button>
-            <div class="meter coins"><span class="dot"></span><span class="meter-coins">0</span></div>
+            <div class="meter coins"><span class="meter-label">Coins</span><span class="meter-coins">0</span></div>
           </div>
         </header>
         <div class="section-head">
           <h1>Scan</h1>
-          <span>Defeat to fill · claim at 100%</span>
+          <span>Defeat a species to fill its scan. Claim once it reaches 100%.</span>
         </div>
         <div class="scan-list" id="scan-list"></div>
       </section>
 
-      <!-- SHOP -->
       <section class="screen" id="screen-shop">
         <header class="topbar">
           <div class="who who-name">Traveler</div>
           <div class="meters">
             <button class="btn-bag" type="button">Bag</button>
-            <div class="meter coins"><span class="dot"></span><span class="meter-coins">0</span></div>
+            <div class="meter coins"><span class="meter-label">Coins</span><span class="meter-coins">0</span></div>
           </div>
         </header>
         <div class="section-head">
           <h1>Shop</h1>
-          <span>Training · Items · Gear chests</span>
+          <span>Training boosts, battle items, and gear chests.</span>
         </div>
         <div class="shop-tabs" id="shop-tabs"></div>
         <div class="shop-pick" id="shop-pick"></div>
         <div class="shop-list" id="shop-list"></div>
       </section>
 
-      <!-- EVOLVE (opened from party, not in nav) -->
       <section class="screen" id="screen-evolve">
         <header class="topbar">
           <div class="who who-name">Traveler</div>
           <div class="meters">
             <button class="btn-bag" type="button">Bag</button>
-            <div class="meter coins"><span class="dot"></span><span class="meter-coins">0</span></div>
+            <div class="meter coins"><span class="meter-label">Coins</span><span class="meter-coins">0</span></div>
           </div>
         </header>
         <div class="section-head">
           <h1>Evolve</h1>
-          <button class="btn btn-ghost btn-sm" id="btn-evo-back">← Party</button>
+          <button class="btn btn-ghost btn-sm" id="btn-evo-back" type="button">Party</button>
         </div>
         <div class="evo-list" id="evo-list"></div>
       </section>
 
-      <!-- BAG -->
       <section class="screen" id="screen-bag">
         <header class="topbar">
           <div class="who who-name">Traveler</div>
           <div class="meters">
-            <div class="meter coins"><span class="dot"></span><span class="meter-coins">0</span></div>
+            <div class="meter coins"><span class="meter-label">Coins</span><span class="meter-coins">0</span></div>
           </div>
         </header>
         <div class="section-head">
           <h1>Bag</h1>
-          <button class="btn btn-ghost btn-sm" id="btn-bag-back" type="button">← Back</button>
+          <button class="btn btn-ghost btn-sm" id="btn-bag-back" type="button">Back</button>
         </div>
         <div id="bag-root"></div>
       </section>
-
-      <nav class="nav hidden" id="nav">
-        <button class="nav-btn active" data-tab="party"><span class="ico">◈</span>Party</button>
-        <button class="nav-btn" data-tab="explore"><span class="ico">◎</span>Explore</button>
-        <button class="nav-btn" data-tab="scan"><span class="ico">◌</span>Scan</button>
-        <button class="nav-btn" data-tab="shop"><span class="ico">⬡</span>Shop</button>
-      </nav>
+      </main>
     </div>
 
     <div class="sheet" id="detail-sheet">

@@ -84,7 +84,7 @@ export function createShopView(ctx) {
               shopCategory === "training" && stat ? ` · now ${stat.value}` : ""
             }${locked ? " · Coming soon" : ""}</small>
           </div>
-          <div class="shop-price">${locked ? "—" : `${item.price}🪙`}</div>
+          <div class="shop-price">${locked ? "—" : item.price}</div>
         </button>`;
       })
       .join("");

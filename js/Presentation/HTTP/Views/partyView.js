@@ -37,11 +37,19 @@ export function createPartyView(ctx) {
           ${avatarHtml(p.species)}
           <div class="pet-meta">
             <strong>${escapeHtml(p.nickname)}</strong>
-            <small>${escapeHtml(p.species.name)} · ${escapeHtml(p.species.stageName || `Stage ${p.species.stage}`)}</small>
+            <small>${[p.species.element, p.species.stageName || `Stage ${p.species.stage}`]
+              .filter(Boolean)
+              .map(escapeHtml)
+              .join(" · ")}</small>
           </div>
-          <div class="power-chip">Lv.${p.level}</div>
+          <div class="power-chip">Lv ${p.level}</div>
+          ${
+            p.id === ctx.state.activeCreatureId
+              ? `<span class="status stable">Active</span>`
+              : `<span class="status"></span>`
+          }
         </button>
-        <button class="btn btn-secondary btn-sm pet-evolve-btn" data-evolve-open="${p.id}">
+        <button class="btn btn-ghost btn-sm pet-evolve-btn" data-evolve-open="${p.id}">
           Evolve
         </button>
       </div>`
@@ -223,9 +231,11 @@ export function createPartyView(ctx) {
       <div class="sheet-handle"></div>
       <div class="detail-hero">
         ${avatarHtml(p.species)}
-        <h2>${escapeHtml(p.nickname)}</h2>
-        <p>${escapeHtml(p.species.name)} · ${escapeHtml(xpLine)}</p>
-        <p>${escapeHtml(p.species.blurb)}</p>
+        <div>
+          <h2>${escapeHtml(p.nickname)}</h2>
+          <p>${escapeHtml(p.species.name)} · ${escapeHtml(xpLine)}</p>
+          <p>${escapeHtml(p.species.blurb)}</p>
+        </div>
       </div>
       <div class="gear-grid">
         ${gearSlotsMeta()

@@ -27,7 +27,7 @@ export function createBattleView(ctx) {
             <div class="finfo">
               <strong>${escapeHtml(b.you.nickname)}</strong>
               <small>Lv.${b.you.level || 1}</small>
-              <div class="hpbar"><span style="width:${youPct}%"></span></div>
+              <div class="hpbar ${youPct <= 30 ? "critical" : ""}"><span style="width:${youPct}%"></span></div>
             </div>
           </div>
         </div>
@@ -42,7 +42,7 @@ export function createBattleView(ctx) {
           </div>
         </div>
         <div class="battle-actions" id="battle-actions">
-          <button class="btn btn-primary" data-act="strike">Strike<small>Solid hit</small></button>
+          <button class="btn btn-accent" data-act="strike">Strike<small>Solid hit</small></button>
           <button class="btn btn-secondary" data-act="guard">Guard<small>Brace</small></button>
           <button class="btn btn-secondary" data-act="burst">Burst<small>Risky</small></button>
           <button class="btn btn-secondary" id="btn-battle-item">Item<small>Bag</small></button>

@@ -25,10 +25,11 @@ export function toast(msg) {
 export function showScreen(id) {
   $$(".screen").forEach((s) => s.classList.toggle("active", s.id === id));
   const tab = id.replace("screen-", "");
-  const hub = ["party", "explore", "scan", "shop"].includes(tab);
+  const hub = ["party", "explore", "scan", "shop", "bag", "evolve"].includes(tab);
+  const activeTab = tab === "evolve" ? "party" : tab;
   $("#nav").classList.toggle("hidden", !hub);
   if (hub) {
-    $$(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+    $$(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === activeTab));
   }
 }
 

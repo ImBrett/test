@@ -28,17 +28,22 @@ export function createExploreView(ctx) {
           .map((z) => {
             const who = (z.species || []).join(", ");
             const locked = !z.unlocked;
+            const status = locked ? "Locked" : z.cleared ? "Clear" : "Open";
+            const statusClass = locked ? "hold" : z.cleared ? "stable" : "";
             return `
           <button class="zone-card ${locked ? "locked" : ""} ${z.isBoss ? "boss" : ""} ${
             z.cleared ? "cleared" : ""
           }" data-zone="${escapeHtml(z.code)}" ${locked ? "disabled" : ""}>
-            <div class="zone-label">${escapeHtml(z.label)}${z.isBoss ? " · Boss" : ""}${
-              z.cleared ? " · Cleared" : ""
-            }</div>
-            <h3>${escapeHtml(z.name)}</h3>
-            <p>${escapeHtml(z.vibe)}</p>
-            <div class="cost">${escapeHtml(levelBand(z))}${who ? ` · ${escapeHtml(who)}` : ""}</div>
-            ${locked ? `<div class="lock">Clear the previous area</div>` : ""}
+            <span class="zone-label">${escapeHtml(z.label)}</span>
+            <span class="zone-main">
+              <h3>${escapeHtml(z.name)}</h3>
+              <p>${escapeHtml(z.vibe)}${locked ? " · Clear the previous area" : ""}</p>
+            </span>
+            <span class="cost">${escapeHtml(levelBand(z))}</span>
+            <span class="zone-who">${escapeHtml(who)}</span>
+            <span class="status ${statusClass}${z.isBoss ? " boss" : ""}">${
+              z.isBoss ? "Boss" : status
+            }</span>
           </button>`;
           })
           .join("")}
